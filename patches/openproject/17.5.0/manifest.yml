@@ -1,0 +1,46 @@
+# Patch manifest for openproject/openproject:17.5.0
+# SPEC: SPEC-OP-TAXONOMY-001 REQ-BUILD-002/006, REQ-UPGRADE-006
+#
+# Each patch entry must specify:
+#   file:        path relative to repo root (patches/openproject/17.5.0/*.patch)
+#   target:      path of the file being patched inside the OP source tree
+#   checksum:    SHA256 of the original target file at this OP version
+#   description: human-readable purpose
+#   op_version_range: ">=17.5.0,<17.6.0" (semver range for validity)
+
+version: "17.5.0"
+op_base_image: "openproject/openproject:17.5.0"
+generated: "2026-06-19"
+spec: "SPEC-OP-TAXONOMY-001"
+
+patches:
+  # WP section row renderer
+  # Injects wp_section taxonomy nodes as display-only section rows in the WP fast-table.
+  - file: "patches/openproject/17.5.0/wp-section-row-builder.patch"
+    target: "frontend/src/app/features/work-packages/components/wp-fast-table/builders/modes/grouped/group-header-builder.ts"
+    checksum: "PLACEHOLDER_SHA256_REPLACE_ON_FIRST_BUILD"
+    description: "Render abyz_taxonomy wp_section nodes as display-only section rows"
+    op_version_range: ">=17.5.0,<17.6.0"
+    severity: "required"
+
+  # WP row type discriminator
+  # Adds taxonomy section row type to the WP row type union.
+  - file: "patches/openproject/17.5.0/wp-row-interfaces.patch"
+    target: "frontend/src/app/features/work-packages/components/wp-fast-table/wp-table.interfaces.ts"
+    checksum: "PLACEHOLDER_SHA256_REPLACE_ON_FIRST_BUILD"
+    description: "Add taxonomy section row type to WP table row type union"
+    op_version_range: ">=17.5.0,<17.6.0"
+    severity: "required"
+
+  # Project list title row
+  # Renders abyz_taxonomy project_title nodes as display-only title rows in the project list.
+  - file: "patches/openproject/17.5.0/project-title-row-component.patch"
+    target: "app/components/projects/row_component.rb"
+    checksum: "PLACEHOLDER_SHA256_REPLACE_ON_FIRST_BUILD"
+    description: "Render project_title taxonomy nodes as display-only header rows in project list"
+    op_version_range: ">=17.5.0,<17.6.0"
+    severity: "required"
+
+# Note: PLACEHOLDER_SHA256_REPLACE_ON_FIRST_BUILD values must be replaced with
+# actual SHA256 checksums of the target files at OP 17.5.0 before build.sh is run.
+# Run: sha256sum <target-file-extracted-from-base-image>
