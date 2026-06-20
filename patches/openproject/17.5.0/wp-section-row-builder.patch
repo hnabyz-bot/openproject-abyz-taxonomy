@@ -1,0 +1,48 @@
+--- a/frontend/src/app/features/work-packages/components/wp-fast-table/builders/modes/grouped/group-header-builder.ts
++++ b/frontend/src/app/features/work-packages/components/wp-fast-table/builders/modes/grouped/group-header-builder.ts
+@@ -29,6 +29,7 @@ import { Injector } from '@angular/core';
+ import { I18nService } from 'core-app/core/i18n/i18n.service';
+ import { rowGroupClassName } from 'core-app/features/work-packages/components/wp-fast-table/builders/modes/grouped/grouped-classes.constants';
+ import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
++import { TaxonomySectionRow, TAXONOMY_SECTION_ROW_KIND } from 'core-app/features/work-packages/components/wp-fast-table/wp-table.interfaces';
+ import { GroupObject } from 'core-app/features/hal/resources/wp-collection-resource';
+ import { groupName } from './grouped-rows-helpers';
+ import { ProjectPhaseDisplayField } from 'core-app/shared/components/fields/display/field-types/project-phase-display-field.module';
+@@ -93,6 +94,34 @@ export class GroupHeaderBuilder {
+     return row;
+   }
+
++  /**
++   * Builds a display-only taxonomy section row to separate WP groups by abyz_taxonomy classification.
++   * Rendered as a non-interactive header row; no expander, no count.
++   */
++  public buildTaxonomySectionRow(section:TaxonomySectionRow, colspan:number):HTMLElement {
++    const row = document.createElement('tr');
++    row.classList.add('abyz-taxonomy-section-row', rowGroupClassName);
++    row.dataset.taxonomyCode = section.taxonomyCode;
++    row.setAttribute('aria-label', section.name);
++    row.innerHTML = `
++      <td colspan="${colspan}" class="abyz-taxonomy-section-cell -no-highlighting">
++        <div class="abyz-taxonomy-section--value">
++          <span class="abyz-taxonomy-section--icon icon-tag"></span>
++          <span class="abyz-taxonomy-section--name">${_.escape(section.name)}</span>
++        </div>
++      </td>
++    `;
++    section.element = row;
++    return row;
++  }
++
++  /**
++   * Returns true when the given row-like object is a TaxonomySectionRow.
++   */
++  public static isTaxonomySectionRow(row:unknown):row is TaxonomySectionRow {
++    return (
++      typeof row === 'object' && row !== null &&
++      (row as TaxonomySectionRow).kind === TAXONOMY_SECTION_ROW_KIND
++    );
++  }
++
+   /**
+    * Returns a leading icon to be rendered in front of the group, if applicable. Will use the hrefs of the group
+    * to determine whether there is a known icon for this type or not.

@@ -2,7 +2,7 @@
 
 **대상 버전**: openproject-abyz-taxonomy:17.5.0-0.1.0  
 **운영 인스턴스**: `openproject-stack` (raspi5p, plm.abyz-lab.work)  
-**관련 SPEC**: SPEC-OP-TAXONOMY-001 v0.2.0  
+**관련 SPEC**: SPEC-OP-TAXONOMY-001 v0.3.0  
 **관련 이슈**: hnabyz-bot/abyz-lab-pm #56, #57~#63
 
 ---
@@ -245,8 +245,9 @@ ls -lh ~/workspace/backups/op-taxonomy-*.tar.gz
 | 날짜 | 버전 | 내용 |
 |---|---|---|
 | 2026-06-19 | 1.0.0 | 최초 작성. SPEC-OP-TAXONOMY-001 v0.2.0 배포 안전 설계 기반. |
+| 2026-06-20 | 1.0.1 | SPEC 참조 v0.2.0 → v0.3.0 갱신. |
 
 ---
 
 *이 런북은 SPEC-OP-TAXONOMY-001 REQ-DEPLOY-006 요구사항에 의해 작성되었다.*  
-*변경 시 SPEC v0.2.0 Section 5.5 내용과 일치 여부를 확인한다.*
+*변경 시 SPEC v0.3.0 Section 5.5 내용과 일치 여부를 확인한다.*

@@ -1,0 +1,29 @@
+--- a/frontend/src/app/features/work-packages/components/wp-fast-table/wp-table.interfaces.ts
++++ b/frontend/src/app/features/work-packages/components/wp-fast-table/wp-table.interfaces.ts
+@@ -1,7 +1,7 @@
+ /**
+  * Interface of a single row instance handled by the table.
+  * May contain references to the current inserted row (if present)
+- * or the group it belonged to when initially rendered.
++ * or the group / taxonomy section it belonged to when initially rendered.
+  */
+ import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
+ import { GroupObject } from 'core-app/features/hal/resources/wp-collection-resource';
+@@ -12,3 +12,16 @@ export interface WorkPackageTableRow {
+   element?:HTMLElement;
+   group:GroupObject|null;
+ }
++
++/** Row kind discriminator for abyz_taxonomy section rows. */
++export const TAXONOMY_SECTION_ROW_KIND = 'abyz_taxonomy_section' as const;
++
++/**
++ * Display-only header row injected between WP groups by the taxonomy plugin.
++ * Not a real WorkPackage — rendered as a non-interactive section separator.
++ */
++export interface TaxonomySectionRow {
++  kind: typeof TAXONOMY_SECTION_ROW_KIND;
++  taxonomyCode: string;
++  name: string;
++  element?:HTMLElement;
++}

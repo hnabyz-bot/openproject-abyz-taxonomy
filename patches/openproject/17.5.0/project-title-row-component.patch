@@ -1,0 +1,27 @@
+--- a/app/components/projects/row_component.rb
++++ b/app/components/projects/row_component.rb
+@@ -30,11 +30,13 @@
+ module Projects
+   class RowComponent < ::RowComponent
+     include CalculatedValues::ErrorsHelper
++    include AbyzTaxonomy::ProjectRowConcern if defined?(AbyzTaxonomy::ProjectRowConcern)
+ 
+     delegate :identifier, to: :project
+     delegate :favorited_project_ids,
+              :project_phase_by_definition,
+              to: :table
++    delegate :taxonomy_section_for, to: :table, allow_nil: true
+ 
+     def project
+       model.first
+@@ -49,6 +51,10 @@
+       ""
+     end
+ 
++    def taxonomy_section_name
++      taxonomy_section_for&.call(project)
++    end
++
+     def favorited # rubocop:disable Metrics/AbcSize
+       return nil if project.archived?
+ 
