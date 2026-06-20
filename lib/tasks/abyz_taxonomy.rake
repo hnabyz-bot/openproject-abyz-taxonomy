@@ -4,7 +4,7 @@ namespace :abyz_taxonomy do
   namespace :seed do
     desc "Import PROJ6 legacy title work packages as taxonomy wp_section nodes"
     task proj6_legacy_titles: :environment do
-      project = Project.find_by!(identifier: "PROJ6")
+      project = Project.find_by!(identifier: "proj6")
 
       root = AbyzTaxonomy::Node.find_or_create_by!(code: "ra") do |node|
         node.scope_type = "global"
