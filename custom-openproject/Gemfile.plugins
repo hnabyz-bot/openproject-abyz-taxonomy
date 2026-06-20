@@ -1,0 +1,5 @@
+group :opf_plugins do
+  gem "openproject-abyz-taxonomy",
+      path: "/app/plugins/openproject-abyz-taxonomy",
+      require: "open_project/abyz_taxonomy"
+end
