@@ -1,4 +1,4 @@
-FROM openproject/openproject:17
+FROM openproject/openproject:17.5.0
 
 COPY custom-openproject/Gemfile.plugins /app/Gemfile.plugins
 COPY plugins/openproject-abyz-taxonomy /app/plugins/openproject-abyz-taxonomy
