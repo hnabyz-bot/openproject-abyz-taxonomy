@@ -1,0 +1,8 @@
+services:
+  openproject-taxonomy-access:
+    image: nginx:alpine
+    container_name: openproject-taxonomy-access
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./nginx/dev-access.conf:/etc/nginx/conf.d/default.conf:ro

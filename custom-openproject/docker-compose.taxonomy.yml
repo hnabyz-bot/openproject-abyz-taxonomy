@@ -3,7 +3,7 @@ services:
     image: openproject-abyz-taxonomy:17.5.0-0.1.0
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8087:80"
+      - "127.0.0.1:18087:80"
     environment:
       - OPENPROJECT_SECRET_KEY_BASE=${OPENPROJECT_SECRET_KEY_BASE}
       - SECRET_KEY_BASE=${OPENPROJECT_SECRET_KEY_BASE}
@@ -21,4 +21,3 @@ services:
 volumes:
   op_taxonomy_pgdata17:
   op_taxonomy_assets:
-
