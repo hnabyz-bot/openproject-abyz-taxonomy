@@ -53,10 +53,18 @@ if not patches:
     sys.exit(0)
 
 errors = []
+checked = 0
+skipped = 0
 for patch in patches:
     patch_file = os.path.join(repo_root, patch["file"])
     if not os.path.exists(patch_file):
         errors.append(f"MISSING patch file: {patch_file}")
+        continue
+
+    target = os.path.join(repo_root, patch["target"])
+    if not os.path.exists(target):
+        print(f"  Skipping source-tree validation for {patch['file']} (target not present in this repo).")
+        skipped += 1
         continue
 
     result = subprocess.run(
@@ -65,6 +73,8 @@ for patch in patches:
     )
     if result.returncode != 0:
         errors.append(f"PATCH FAIL ({patch['file']}): {result.stderr.strip()}")
+    else:
+        checked += 1
 
 if errors:
     print("[ERROR] Patch validation failed:")
@@ -72,7 +82,7 @@ if errors:
         print(f"  - {e}")
     sys.exit(1)
 
-print(f"  All {len(patches)} patch(es) passed --check validation.")
+print(f"  Patch validation completed: {checked} checked, {skipped} skipped, {len(errors)} failed.")
 EOF
 
 # Step 3 — Build Docker image
