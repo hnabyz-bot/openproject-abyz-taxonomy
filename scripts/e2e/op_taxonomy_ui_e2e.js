@@ -296,7 +296,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page.waitForTimeout(500);
     await screenshot(page, "03-project-under-title");
     evidence.screenshots.push("03-project-under-title.png");
-    evidence.projectListOrder = await page.evaluate(({ titleCode, projectIdentifier }) => {
+    evidence.projectListOrder = await page.evaluate(({ titleCode, projectIdentifier, projectName }) => {
       const projectIdentifierFromHref = (href) => {
         const match = String(href || "").match(/\/projects\/([^/?#]+)\/?(?:[?#].*)?$/);
         return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
@@ -323,22 +323,30 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       });
       const titleIndex = rows.findIndex((row) => row.taxonomyCode === titleCode);
       const projectIndex = rows.findIndex((row) => row.projectIdentifier === projectIdentifier);
+      const table = document.querySelector("#project-table");
       const titleRow = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
       const projectRow = Array.from(document.querySelectorAll("#project-table tbody tr")).find((row) => projectIdentifierFromRow(row) === projectIdentifier);
-      const titleNameCell = titleRow && titleRow.querySelector("td.name.abyz-taxonomy-title-cell");
+      const titleNameCell = titleRow && titleRow.querySelector("td.abyz-taxonomy-title-cell");
       const projectNameCell = projectRow && projectRow.querySelector("td.name");
       const titleLabel = titleNameCell && titleNameCell.querySelector(".abyz-taxonomy-row-label");
       const titleText = titleLabel && titleLabel.querySelector("span");
-      const projectLink = projectNameCell && projectNameCell.querySelector('a[href*="/projects/"]');
+      const projectLink = projectRow && (
+        projectRow.querySelector(".abyz-taxonomy-project-child-display-link") ||
+        (projectNameCell && projectNameCell.querySelector('a[href*="/projects/"]'))
+      );
+      const tableRect = table && table.getBoundingClientRect();
+      const titleLabelRect = titleLabel && titleLabel.getBoundingClientRect();
       const titleRect = titleText && titleText.getBoundingClientRect();
       const projectRect = projectLink && projectLink.getBoundingClientRect();
       const visualAlignment = {
         titleCellIndex: titleNameCell ? Array.from(titleRow.children).indexOf(titleNameCell) : -1,
         projectNameCellIndex: projectNameCell ? Array.from(projectRow.children).indexOf(projectNameCell) : -1,
         titleTextAlign: titleNameCell ? getComputedStyle(titleNameCell).textAlign : null,
+        titleOffsetFromTable: tableRect && titleLabelRect ? Math.round(titleLabelRect.left - tableRect.left) : null,
         titleLeft: titleRect ? Math.round(titleRect.left) : null,
         childProjectLeft: projectRect ? Math.round(projectRect.left) : null,
-        indentPx: titleRect && projectRect ? Math.round(projectRect.left - titleRect.left) : null
+        indentPx: titleRect && projectRect ? Math.round(projectRect.left - titleRect.left) : null,
+        childProjectText: projectLink ? projectLink.innerText.trim() : null
       };
       return {
         titleIndex,
@@ -351,7 +359,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         visualAlignment,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
-    }, { titleCode, projectIdentifier });
+    }, { titleCode, projectIdentifier, projectName });
 
     if (
       !evidence.projectListOrder.adjacent ||
@@ -360,8 +368,11 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       evidence.projectListOrder.titleHasVisibleEditButton ||
       evidence.projectListOrder.titleHasVisibleDeleteButton ||
       evidence.projectListOrder.visualAlignment.titleTextAlign !== "left" ||
-      evidence.projectListOrder.visualAlignment.titleCellIndex !== evidence.projectListOrder.visualAlignment.projectNameCellIndex ||
-      evidence.projectListOrder.visualAlignment.indentPx < 8
+      evidence.projectListOrder.visualAlignment.titleCellIndex !== 0 ||
+      evidence.projectListOrder.visualAlignment.titleOffsetFromTable > 24 ||
+      evidence.projectListOrder.visualAlignment.indentPx < 8 ||
+      evidence.projectListOrder.visualAlignment.indentPx > 48 ||
+      evidence.projectListOrder.visualAlignment.childProjectText !== projectName
     ) {
       throw new Error(`Project title/project adjacency failed: ${JSON.stringify(evidence.projectListOrder)}`);
     }

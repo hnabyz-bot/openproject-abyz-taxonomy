@@ -391,44 +391,51 @@
     var title = entry.title;
     var count = entry.projects ? entry.projects.length : 0;
     var row = document.createElement("tr");
-    var fillerColspan = Math.max(columnCount - 4, 1);
     row.className = "abyz-taxonomy-project-title-row";
     row.setAttribute("data-abyz-taxonomy-code", title.code);
     row.setAttribute("data-test-selector", "abyz-taxonomy-project-title-row");
-    if (columnCount < 4) {
-      row.innerHTML = [
-        '<td colspan="' + columnCount + '" class="abyz-taxonomy-title-cell">',
-        '<div class="abyz-taxonomy-row-inner">',
-        '<div class="abyz-taxonomy-row-label">',
-        '<span>' + escapeHtml(title.name) + '</span>',
-        '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
-        '</div>',
-        '<div class="abyz-taxonomy-row-actions">',
-        taxonomyRowMenuButton(title.code, "project-title"),
-        '</div>',
-        '</div>',
-        '</td>'
-      ].join("");
-      return row;
-    }
-
     row.innerHTML = [
-      '<td class="favorited -w-abs-45 abyz-taxonomy-project-title-spacer"></td>',
-      '<td class="hierarchy abyz-taxonomy-project-title-spacer"></td>',
-      '<td class="name project--hierarchy abyz-taxonomy-title-cell">',
+      '<td colspan="' + columnCount + '" class="abyz-taxonomy-title-cell">',
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
       '<span>' + escapeHtml(title.name) + '</span>',
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
-      '</div>',
-      '</td>',
-      '<td colspan="' + fillerColspan + '" class="abyz-taxonomy-title-filler"></td>',
-      '<td class="buttons abyz-taxonomy-title-actions-cell">',
+      '<div class="abyz-taxonomy-row-actions">',
       taxonomyRowMenuButton(title.code, "project-title"),
+      '</div>',
+      '</div>',
       '</td>'
     ].join("");
     return row;
+  }
+
+  function decorateProjectChildRow(row) {
+    var hierarchyCell = row.querySelector("td.hierarchy");
+    var nameCell = row.querySelector("td.name.project--hierarchy");
+    var originalLink = nameCell && nameCell.querySelector('a[href*="/projects/"]');
+    if (!hierarchyCell || !originalLink) {
+      return;
+    }
+
+    originalLink.classList.add("abyz-taxonomy-project-child-original-link");
+    if (hierarchyCell.querySelector(".abyz-taxonomy-project-child-display-link")) {
+      return;
+    }
+
+    var displayLink = originalLink.cloneNode(true);
+    displayLink.classList.add("abyz-taxonomy-project-child-display-link");
+    displayLink.classList.remove("abyz-taxonomy-project-child-original-link");
+    hierarchyCell.appendChild(displayLink);
+  }
+
+  function resetProjectChildRow(row) {
+    Array.prototype.forEach.call(row.querySelectorAll(".abyz-taxonomy-project-child-display-link"), function (link) {
+      link.remove();
+    });
+    Array.prototype.forEach.call(row.querySelectorAll(".abyz-taxonomy-project-child-original-link"), function (link) {
+      link.classList.remove("abyz-taxonomy-project-child-original-link");
+    });
   }
 
   function projectSelectList() {
@@ -573,6 +580,7 @@
       projectRows.forEach(function (projectRow) {
         projectRow.classList.add("abyz-taxonomy-project-child-row");
         projectRow.setAttribute("data-abyz-display-parent", entry.title.code);
+        decorateProjectChildRow(projectRow);
         assignedRows.push(projectRow);
         orderedRows.push(projectRow);
       });
@@ -582,6 +590,7 @@
       if (assignedRows.indexOf(row) === -1) {
         row.classList.remove("abyz-taxonomy-project-child-row");
         row.removeAttribute("data-abyz-display-parent");
+        resetProjectChildRow(row);
         orderedRows.push(row);
       }
     });

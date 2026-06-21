@@ -84,24 +84,24 @@
   text-align: left;
 }
 
-.abyz-taxonomy-project-title-row .abyz-taxonomy-project-title-spacer,
-.abyz-taxonomy-project-title-row .abyz-taxonomy-title-filler,
-.abyz-taxonomy-project-title-row .abyz-taxonomy-title-actions-cell {
-  padding-bottom: 0.65rem;
-  padding-top: 0.65rem;
-}
-
-.abyz-taxonomy-project-title-row .abyz-taxonomy-title-actions-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.abyz-taxonomy-project-title-row .abyz-taxonomy-row-inner {
-  justify-content: flex-start;
-}
-
 .abyz-taxonomy-project-child-row td.name.project--hierarchy {
-  padding-left: calc(0.375rem + 6ch);
+  padding-left: 0.375rem;
+}
+
+.abyz-taxonomy-project-child-row td.name.project--hierarchy .abyz-taxonomy-project-child-original-link {
+  visibility: hidden;
+}
+
+.abyz-taxonomy-project-child-row td.hierarchy {
+  overflow: visible;
+}
+
+.abyz-taxonomy-project-child-display-link {
+  display: inline-block;
+  position: relative;
+  left: 0;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 .abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
