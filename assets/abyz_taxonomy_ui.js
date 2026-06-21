@@ -3,7 +3,8 @@
 
   var state = {
     tree: null,
-    loading: null
+    loading: null,
+    allowNativeWpCreate: false
   };
 
   function csrfToken() {
@@ -86,52 +87,103 @@
     return state.tree && state.tree.wpSections ? state.tree.wpSections : [];
   }
 
-  function insertProjectActions() {
+  function closeCreateMenus() {
+    var menu = document.getElementById("abyz-taxonomy-wp-create-menu");
+    if (menu) {
+      menu.remove();
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll("[popover]"), function (popover) {
+      if (typeof popover.hidePopover === "function") {
+        try {
+          popover.hidePopover();
+        } catch (error) {
+          // The popover may already be closed.
+        }
+      }
+    });
+  }
+
+  function attributeString(attributes) {
+    return Object.keys(attributes || {}).map(function (key) {
+      return key + '="' + escapeHtml(attributes[key]) + '"';
+    }).join(" ");
+  }
+
+  function actionListMenuItem(label, action, attributes) {
+    return [
+      '<li data-abyz-taxonomy-menu-item role="none" data-view-component="true" class="ActionListItem">',
+      '<button type="button" tabindex="-1" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16 abyz-taxonomy-menu-action" data-abyz-action="' + escapeHtml(action) + '" ' + attributeString(attributes) + '>',
+      '<span class="ActionListItem-visual ActionListItem-visual--leading"><span class="abyz-taxonomy-menu-plus">+</span></span>',
+      '<span data-view-component="true" class="ActionListItem-label">' + escapeHtml(label) + '</span>',
+      '</button>',
+      '</li>'
+    ].join("");
+  }
+
+  function projectCreateMenuList() {
     var page = document.querySelector(".project-list-page");
-    if (!page || document.getElementById("abyz-taxonomy-project-actions")) {
+    if (!page) {
+      return null;
+    }
+
+    var trigger = page.querySelector('button[aria-label="추가"][aria-controls], button[aria-label="추가"][popovertarget]');
+    if (!trigger) {
+      return null;
+    }
+
+    var listId = trigger.getAttribute("aria-controls");
+    var list = listId ? document.getElementById(listId) : null;
+    if (list && list.getAttribute("role") === "menu") {
+      return list;
+    }
+
+    var overlayId = trigger.getAttribute("popovertarget");
+    var overlay = overlayId ? document.getElementById(overlayId) : null;
+    return overlay ? overlay.querySelector('ul[role="menu"]') : null;
+  }
+
+  function enhanceProjectCreateMenu() {
+    var list = projectCreateMenuList();
+    if (!list || list.dataset.abyzTaxonomyEnhanced === "true") {
       return;
     }
 
-    var hostButton = page.querySelector('[data-test-selector="workspace-new-button"]');
-    var host = hostButton && hostButton.parentElement ? hostButton.parentElement : page;
-    var wrap = document.createElement("div");
-    wrap.id = "abyz-taxonomy-project-actions";
-    wrap.className = "abyz-taxonomy-actions -project";
-    wrap.setAttribute("data-test-selector", "abyz-taxonomy-project-actions");
-    wrap.innerHTML = [
-      '<button type="button" class="button" data-abyz-action="project-title" data-taxonomy-type="portfolio">포트폴리오 추가</button>',
-      '<button type="button" class="button" data-abyz-action="project-title" data-taxonomy-type="title">타이틀 추가</button>',
-      '<button type="button" class="button" data-abyz-action="project-title" data-taxonomy-type="program">프로그램 추가</button>',
-      '<button type="button" class="button -primary" data-abyz-action="project-under-title">프로젝트 추가</button>'
-    ].join("");
+    list.insertAdjacentHTML("afterbegin", [
+      actionListMenuItem("포트폴리오 추가", "project-title", { "data-taxonomy-type": "portfolio" }),
+      actionListMenuItem("프로그램 추가", "project-title", { "data-taxonomy-type": "program" }),
+      actionListMenuItem("타이틀 추가", "project-title", { "data-taxonomy-type": "title" }),
+      actionListMenuItem("타이틀 아래 프로젝트 추가", "project-under-title", {}),
+      '<li data-abyz-taxonomy-menu-item role="separator" class="ActionList-sectionDivider"></li>'
+    ].join(""));
+    list.dataset.abyzTaxonomyEnhanced = "true";
+  }
 
-    if (host === page) {
-      page.insertBefore(wrap, page.firstElementChild);
-    } else {
-      host.insertAdjacentElement("afterend", wrap);
-    }
+  function openWpCreateMenu(button) {
+    closeCreateMenus();
+
+    var rect = button.getBoundingClientRect();
+    var menu = document.createElement("div");
+    menu.id = "abyz-taxonomy-wp-create-menu";
+    menu.className = "abyz-taxonomy-popover-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("data-test-selector", "abyz-taxonomy-wp-create-menu");
+    menu.style.left = Math.max(8, rect.left + window.scrollX) + "px";
+    menu.style.top = (rect.bottom + window.scrollY + 6) + "px";
+    menu.innerHTML = [
+      '<button type="button" role="menuitem" data-abyz-action="native-work-package">작업 패키지 추가</button>',
+      '<button type="button" role="menuitem" data-abyz-action="wp-section">섹션 추가</button>',
+      '<button type="button" role="menuitem" data-abyz-action="wp-under-section">섹션 아래 WP</button>'
+    ].join("");
+    document.body.appendChild(menu);
+  }
+
+  function insertProjectActions() {
+    enhanceProjectCreateMenu();
   }
 
   function insertWorkPackageActions() {
-    if (!currentProjectIdentifier() || document.getElementById("abyz-taxonomy-wp-actions")) {
-      return;
-    }
-
-    var createButton = document.querySelector(".wp-create-button");
-    if (!createButton) {
-      return;
-    }
-
-    var host = createButton.closest("li.toolbar-item") || createButton;
-    var wrap = document.createElement(host.tagName.toLowerCase() === "li" ? "li" : "div");
-    wrap.id = "abyz-taxonomy-wp-actions";
-    wrap.className = host.tagName.toLowerCase() === "li" ? "toolbar-item abyz-taxonomy-actions" : "abyz-taxonomy-actions";
-    wrap.setAttribute("data-test-selector", "abyz-taxonomy-wp-actions");
-    wrap.innerHTML = [
-      '<button type="button" class="button" data-abyz-action="wp-section">섹션 추가</button>',
-      '<button type="button" class="button" data-abyz-action="wp-under-section">섹션 아래 WP</button>'
-    ].join("");
-    host.insertAdjacentElement("afterend", wrap);
+    return;
   }
 
   function projectRowMap(tbody) {
@@ -384,6 +436,7 @@
 
   function openModal(kind, context) {
     context = context || {};
+    closeCreateMenus();
     var projectIdentifier = currentProjectIdentifier();
     var heading = {
       projectTitle: context.taxonomyType === "program" ? "프로그램 추가" : (context.taxonomyType === "portfolio" ? "포트폴리오 추가" : "타이틀 추가"),
@@ -519,6 +572,14 @@
     } else if (action === "submit-modal") {
       event.preventDefault();
       submitModal();
+    } else if (action === "native-work-package") {
+      event.preventDefault();
+      closeCreateMenus();
+      state.allowNativeWpCreate = true;
+      var wpButton = document.querySelector("button.add-work-package");
+      if (wpButton) {
+        wpButton.click();
+      }
     } else if (action === "project-title") {
       event.preventDefault();
       openModal("projectTitle", { taxonomyType: trigger.getAttribute("data-taxonomy-type") || "title" });
@@ -534,10 +595,34 @@
     }
   }
 
+  function interceptCreateButtonClick(event) {
+    var wpButton = event.target.closest("button.add-work-package");
+    if (wpButton) {
+      if (state.allowNativeWpCreate) {
+        state.allowNativeWpCreate = false;
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      openWpCreateMenu(wpButton);
+      return;
+    }
+
+    if (!event.target.closest("#abyz-taxonomy-wp-create-menu") && !event.target.closest("#abyz-taxonomy-modal-root")) {
+      var openMenu = document.getElementById("abyz-taxonomy-wp-create-menu");
+      if (openMenu) {
+        openMenu.remove();
+      }
+    }
+  }
+
   function refresh() {
+    enhanceProjectCreateMenu();
     insertProjectActions();
     insertWorkPackageActions();
     loadTree().then(function () {
+      enhanceProjectCreateMenu();
       renderProjectTitleRows();
       renderWpSectionRows();
     }).catch(function () {
@@ -551,6 +636,7 @@
     refreshTimer = window.setTimeout(refresh, 250);
   }
 
+  document.addEventListener("click", interceptCreateButtonClick, true);
   document.addEventListener("click", handleClick);
   document.addEventListener("DOMContentLoaded", refresh);
   document.addEventListener("turbo:load", refresh);

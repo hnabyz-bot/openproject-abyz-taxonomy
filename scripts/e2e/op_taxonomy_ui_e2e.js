@@ -44,6 +44,22 @@ async function clickAndSave(page) {
   await page.locator("#abyz-taxonomy-modal-root").waitFor({ state: "detached", timeout: 90000 });
 }
 
+async function openProjectCreateMenu(page) {
+  await suppressOnboarding(page);
+  await page.locator('button[aria-label="추가"]').first().click();
+  await page
+    .locator('[role="menu"] [data-abyz-action="project-title"][data-taxonomy-type="title"]')
+    .waitFor({ state: "visible", timeout: 90000 });
+}
+
+async function openWorkPackageCreateMenu(page) {
+  await suppressOnboarding(page);
+  await page.locator("button.add-work-package").first().click();
+  await page
+    .locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-section"]')
+    .waitFor({ state: "visible", timeout: 90000 });
+}
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -96,12 +112,12 @@ async function clickAndSave(page) {
       throw new Error("Login did not produce an authenticated OpenProject session");
     }
     await page.locator(".project-list-page").waitFor({ state: "visible", timeout: 90000 });
-    await page.locator('[data-test-selector="abyz-taxonomy-project-actions"]').waitFor({ state: "visible", timeout: 90000 });
+    await openProjectCreateMenu(page);
     await screenshot(page, "01-project-actions");
     evidence.screenshots.push("01-project-actions.png");
 
     await suppressOnboarding(page);
-    await page.locator('[data-abyz-action="project-title"][data-taxonomy-type="title"]').click();
+    await page.locator('[role="menu"] [data-abyz-action="project-title"][data-taxonomy-type="title"]').click();
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(titleName);
     await page.locator('#abyz-taxonomy-modal-root input[name="code"]').fill(titleCode);
     await clickAndSave(page);
@@ -129,12 +145,12 @@ async function clickAndSave(page) {
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
     await page.locator(".wp-create-button").waitFor({ state: "visible", timeout: 120000 });
-    await page.locator('[data-test-selector="abyz-taxonomy-wp-actions"]').waitFor({ state: "visible", timeout: 120000 });
+    await openWorkPackageCreateMenu(page);
     await screenshot(page, "04-wp-actions");
     evidence.screenshots.push("04-wp-actions.png");
 
     await suppressOnboarding(page);
-    await page.locator('[data-abyz-action="wp-section"]').click();
+    await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-section"]').click();
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(sectionName);
     await page.locator('#abyz-taxonomy-modal-root input[name="code"]').fill(sectionCode);
     await clickAndSave(page);
@@ -142,11 +158,8 @@ async function clickAndSave(page) {
     await screenshot(page, "05-wp-section-row");
     evidence.screenshots.push("05-wp-section-row.png");
 
-    await page
-      .locator('[data-test-selector="abyz-taxonomy-wp-section-row"]')
-      .filter({ hasText: sectionName })
-      .locator('[data-abyz-action="wp-under-section"]')
-      .click();
+    await openWorkPackageCreateMenu(page);
+    await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-under-section"]').click();
     await page.locator('#abyz-taxonomy-modal-root select[name="sectionCode"]').selectOption(sectionCode);
     await page.locator('#abyz-taxonomy-modal-root input[name="subject"]').fill(wpSubject);
     await clickAndSave(page);

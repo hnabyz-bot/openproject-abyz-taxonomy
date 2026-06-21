@@ -13,6 +13,61 @@
   white-space: nowrap;
 }
 
+.ActionListContent.abyz-taxonomy-menu-action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ActionListContent.abyz-taxonomy-menu-action:hover,
+.ActionListContent.abyz-taxonomy-menu-action:focus {
+  background: var(--control-transparent-bgColor-hover, rgb(208 215 222 / 0.32));
+}
+
+.abyz-taxonomy-menu-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.abyz-taxonomy-popover-menu {
+  position: absolute;
+  z-index: 10001;
+  min-width: 12rem;
+  padding: 0.35rem;
+  background: var(--body-background, #fff);
+  border: 1px solid var(--borderColor-muted, #d8dee4);
+  border-radius: 6px;
+  box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 0.18);
+}
+
+.abyz-taxonomy-popover-menu button {
+  display: block;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.abyz-taxonomy-popover-menu button:hover,
+.abyz-taxonomy-popover-menu button:focus {
+  background: var(--control-transparent-bgColor-hover, rgb(208 215 222 / 0.32));
+}
+
 .abyz-taxonomy-project-title-row td,
 .abyz-taxonomy-wp-section-row td {
   background: var(--body-background, #fff);

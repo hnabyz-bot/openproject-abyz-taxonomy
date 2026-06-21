@@ -42,16 +42,18 @@ All endpoints require an authenticated admin user.
 Project list:
 
 1. Open `/projects`.
-2. Use `포트폴리오 추가`, `타이틀 추가`, or `프로그램 추가` to create a display-only `project_title`.
-3. Use `프로젝트 추가` on the title row to create a real OpenProject Project under it.
-4. The title row has no Project link/status/date/progress of its own.
+2. Open the top-right `+ 추가` menu.
+3. Use `포트폴리오 추가`, `프로그램 추가`, or `타이틀 추가` to create a display-only `project_title`.
+4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
+5. The title row has no Project link/status/date/progress of its own.
 
 Work package table:
 
 1. Open `/projects/:identifier/work_packages`.
-2. Use `섹션 추가` to create a display-only `wp_section`.
-3. Use `WP 추가` or `섹션 아래 WP` to create a real WorkPackage under the section.
-4. The section row has no WorkPackage id/status/assignee/dates of its own.
+2. Open the top-right `만들기` menu.
+3. Use `섹션 추가` to create a display-only `wp_section`.
+4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
+5. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
 
