@@ -113,10 +113,13 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
   page.on("pageerror", (err) => consoleMessages.push(`pageerror: ${err.message}`));
 
   const titleName = `E2E 타이틀 ${stamp}`;
-  const editedTitleName = `E2E 타이틀 편집 ${stamp}`;
+  const editedTitleName = `E2E 프로그램 편집 ${stamp}`;
+  const editedTitleTypeLabel = "프로그램";
   const deleteTitleName = `E2E delete fixture ${stamp}`;
+  const apiDeleteTitleName = `E2E API delete fixture ${stamp}`;
   const titleCode = `project.e2e-${stamp}`;
   const deleteTitleCode = `project.e2e-delete-fixture-${stamp}`;
+  const apiDeleteTitleCode = `project.e2e-api-delete-${stamp}`;
   const projectName = `E2E 프로젝트 ${stamp}`;
   const projectIdentifier = `e2e-taxonomy-${stamp.toLowerCase()}`;
   const sectionName = `E2E 섹션 ${stamp}`;
@@ -131,6 +134,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     stamp,
     titleCode,
     editedTitleName,
+    editedTitleTypeLabel,
     projectIdentifier,
     sectionCode,
     editedSectionName,
@@ -178,10 +182,32 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
 
     await page.locator(`[data-abyz-taxonomy-code="${titleCode}"] [data-abyz-action="edit-node"]`).first().click();
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(editedTitleName);
+    await page.locator('#abyz-taxonomy-modal-root select[name="taxonomyType"]').selectOption("program");
     await clickAndSave(page);
     await waitForText(page, editedTitleName);
+    await page.waitForFunction(({ titleCode, editedTitleTypeLabel }) => {
+      const row = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
+      return !!(row && row.innerText.includes(editedTitleTypeLabel));
+    }, { titleCode, editedTitleTypeLabel }, { timeout: 90000 });
     await screenshot(page, "02b-project-title-edited");
     evidence.screenshots.push("02b-project-title-edited.png");
+    evidence.projectTitleEditAssertion = await page.evaluate(({ titleCode, editedTitleName, editedTitleTypeLabel }) => {
+      const row = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
+      const text = row && row.innerText.trim().replace(/\s+/g, " ");
+      return {
+        text,
+        hasEditedName: !!(text && text.includes(editedTitleName)),
+        hasTypeLabel: !!(text && text.includes(editedTitleTypeLabel)),
+        hidesInternalKind: !!(text && !text.includes("project_title"))
+      };
+    }, { titleCode, editedTitleName, editedTitleTypeLabel });
+    if (
+      !evidence.projectTitleEditAssertion.hasEditedName ||
+      !evidence.projectTitleEditAssertion.hasTypeLabel ||
+      !evidence.projectTitleEditAssertion.hidesInternalKind
+    ) {
+      throw new Error(`Project title edit assertion failed: ${JSON.stringify(evidence.projectTitleEditAssertion)}`);
+    }
 
     await page.evaluate(async ({ deleteTitleName, deleteTitleCode }) => {
       const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -247,6 +273,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
           index,
           taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
           projectIdentifier: projectIdentifierFromRow(row),
+          hasProgramLabel: row.innerText.includes("프로그램"),
           text: row.innerText.trim().replace(/\s+/g, " ")
         };
       });
@@ -256,11 +283,12 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         titleIndex,
         projectIndex,
         adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
+        titleHasProgramLabel: rows[titleIndex] && rows[titleIndex].hasProgramLabel,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
 
-    if (!evidence.projectListOrder.adjacent) {
+    if (!evidence.projectListOrder.adjacent || !evidence.projectListOrder.titleHasProgramLabel) {
       throw new Error(`Project title/project adjacency failed: ${JSON.stringify(evidence.projectListOrder)}`);
     }
 
@@ -271,6 +299,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page
       .locator(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
       .waitFor({ state: "visible", timeout: 90000 });
+    await page
+      .locator(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
+      .scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
     await screenshot(page, "03b-project-selector-taxonomy");
     evidence.screenshots.push("03b-project-selector-taxonomy.png");
     evidence.projectSelectorOrder = await page.evaluate(({ titleCode, projectIdentifier }) => {
@@ -286,6 +318,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
           projectIdentifier: link && identifierFromHref(link.getAttribute("href")),
           hasEdit: !!row.querySelector('[data-abyz-action="edit-node"]'),
           hasDelete: !!row.querySelector('[data-abyz-action="delete-node"]'),
+          hasProgramLabel: row.innerText.includes("프로그램"),
           text: row.innerText.trim().replace(/\s+/g, " ")
         };
       });
@@ -297,10 +330,16 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
         titleHasEdit: rows[titleIndex] && rows[titleIndex].hasEdit,
         titleHasDelete: rows[titleIndex] && rows[titleIndex].hasDelete,
+        titleHasProgramLabel: rows[titleIndex] && rows[titleIndex].hasProgramLabel,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
-    if (!evidence.projectSelectorOrder.adjacent || !evidence.projectSelectorOrder.titleHasEdit || !evidence.projectSelectorOrder.titleHasDelete) {
+    if (
+      !evidence.projectSelectorOrder.adjacent ||
+      !evidence.projectSelectorOrder.titleHasEdit ||
+      !evidence.projectSelectorOrder.titleHasDelete ||
+      !evidence.projectSelectorOrder.titleHasProgramLabel
+    ) {
       throw new Error(`Project selector taxonomy assertion failed: ${JSON.stringify(evidence.projectSelectorOrder)}`);
     }
     await page.keyboard.press("Escape").catch(() => {});
@@ -437,6 +476,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     evidence.treeAssertion = {
       hasTitle: tree.projectTitles.some((entry) => entry.title.code === titleCode && entry.title.name === editedTitleName),
       deletedTitleAbsent: !tree.projectTitles.some((entry) => entry.title.code === deleteTitleCode),
+      titleTypeProgram: tree.projectTitles.some((entry) => entry.title.code === titleCode && entry.title.rules && entry.title.rules.taxonomyType === "program"),
       hasProject: tree.projectTitles.some((entry) => entry.projects.some((project) => project.identifier === projectIdentifier)),
       hasSection: tree.wpSections.some((entry) => entry.section.code === sectionCode && entry.section.name === editedSectionName),
       hasWorkPackage: tree.wpSections.some((entry) => entry.workPackages.some((wp) => wp.subject === wpSubject))
@@ -444,6 +484,67 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
 
     if (!Object.values(evidence.treeAssertion).every(Boolean)) {
       throw new Error(`Tree assertion failed: ${JSON.stringify(evidence.treeAssertion)}`);
+    }
+
+    evidence.nodeManagementApi = await page.evaluate(async ({ apiDeleteTitleName, apiDeleteTitleCode, apiToken }) => {
+      const auth = `Basic ${btoa(`apikey:${apiToken}`)}`;
+      const jsonRequest = async (path, options = {}) => {
+        const response = await fetch(path, {
+          credentials: "same-origin",
+          ...options,
+          headers: {
+            "Accept": "application/json",
+            "Authorization": auth,
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+          }
+        });
+        const text = await response.text();
+        let body;
+        try {
+          body = JSON.parse(text);
+        } catch (error) {
+          body = { raw: text };
+        }
+        return {
+          status: response.status,
+          body
+        };
+      };
+      const nodePath = `/api/v3/abyz_taxonomy/nodes/${encodeURIComponent(apiDeleteTitleCode)}`;
+      const create = await jsonRequest("/api/v3/abyz_taxonomy/titles", {
+        method: "POST",
+        body: JSON.stringify({
+          name: apiDeleteTitleName,
+          code: apiDeleteTitleCode,
+          taxonomyType: "portfolio"
+        })
+      });
+      const patch = await jsonRequest(nodePath, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: `${apiDeleteTitleName} patched`,
+          taxonomyType: "program"
+        })
+      });
+      const remove = await jsonRequest(nodePath, { method: "DELETE" });
+      const treeResponse = await jsonRequest("/api/v3/abyz_taxonomy/tree", { method: "GET" });
+      return {
+        create,
+        patch,
+        remove,
+        deletedAbsentFromTree: !treeResponse.body.projectTitles.some((entry) => entry.title.code === apiDeleteTitleCode)
+      };
+    }, { apiDeleteTitleName, apiDeleteTitleCode, apiToken });
+    if (
+      evidence.nodeManagementApi.create.status !== 201 ||
+      evidence.nodeManagementApi.patch.status !== 200 ||
+      evidence.nodeManagementApi.patch.body.node.rules.taxonomyType !== "program" ||
+      evidence.nodeManagementApi.remove.status !== 200 ||
+      evidence.nodeManagementApi.remove.body.active !== false ||
+      evidence.nodeManagementApi.deletedAbsentFromTree !== true
+    ) {
+      throw new Error(`Node management API assertion failed: ${JSON.stringify(evidence.nodeManagementApi)}`);
     }
 
     evidence.validationApi = await page.evaluate(async ({ sectionCode, projectIdentifier, stamp, apiToken }) => {

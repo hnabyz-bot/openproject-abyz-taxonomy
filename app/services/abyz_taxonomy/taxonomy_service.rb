@@ -170,10 +170,10 @@ module AbyzTaxonomy
       node = find_node!(code)
 
       Node.transaction do
-        Node.where(parent_id: node.id).update_all(parent_id: nil)
-        Rule.where(node:).delete_all
-        Assignment.where(node:).delete_all
-        node.destroy!
+        now = Time.current
+        Node.where(parent_id: node.id).update_all(parent_id: nil, updated_at: now)
+        Rule.where(node:).update_all(active: false, updated_at: now)
+        node.update!(active: false)
       end
 
       node

@@ -81,11 +81,12 @@ module AbyzTaxonomy
 
       render json: {
         _type: "AbyzTaxonomyDeletedNode",
-        code: node.code
+        code: node.code,
+        active: node.active
       }
     rescue TaxonomyError => e
       render_taxonomy_error(e)
-    rescue ActiveRecord::RecordNotDestroyed => e
+    rescue ActiveRecord::RecordInvalid => e
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 

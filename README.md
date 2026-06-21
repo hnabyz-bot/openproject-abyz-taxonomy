@@ -27,6 +27,8 @@ POST /api/v3/abyz_taxonomy/work_packages
 POST /api/v3/abyz_taxonomy/work_package_assignments
 GET  /api/v3/projects/:id/abyz_taxonomy
 POST /api/v3/abyz_taxonomy/validate
+PATCH  /api/v3/abyz_taxonomy/nodes/:code
+DELETE /api/v3/abyz_taxonomy/nodes/:code
 
 GET  /abyz_taxonomy/ui/tree
 POST /abyz_taxonomy/ui/project_titles
@@ -49,7 +51,7 @@ Project list:
 4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
 5. The created Project is moved directly under its display-only title row in the active Project list.
 6. The top-left project selector also shows the display-only portfolio/program/title row and the linked Project directly below it.
-7. Use `편집`/`삭제` on the display-only row to change or remove the taxonomy node. Delete removes taxonomy rows/assignments only; it does not delete the real Project.
+7. Use `편집`/`삭제` on the display-only row to change or hide the taxonomy node. Delete sets `active=false`; it does not delete the real Project.
 8. The title row has no Project link/status/date/progress of its own.
 
 Work package table:
@@ -60,7 +62,7 @@ Work package table:
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
 5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
 6. Dated WorkPackages render their Gantt bar on the WorkPackage row, with a matching timeline spacer for the section row.
-7. Use `편집`/`삭제` on the display-only section row to change or remove the taxonomy node. Delete removes taxonomy rows/assignments only; it does not delete the real WorkPackage.
+7. Use `편집`/`삭제` on the display-only section row to change or hide the taxonomy node. Delete sets `active=false`; it does not delete the real WorkPackage.
 8. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
@@ -131,9 +133,10 @@ OP_E2E_API_TOKEN=... \
 node scripts/e2e/op_taxonomy_ui_e2e.js
 ```
 
-The test creates, edits, and deletes display-only taxonomy nodes, creates a
+The test creates, edits, and soft-deletes display-only taxonomy nodes, creates a
 Project, WP section, and dated WorkPackage through the browser UI, verifies the
 app-header global quick-add menu, top-left project selector taxonomy rows,
+portfolio/program/title labels and node management API,
 Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
 validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.

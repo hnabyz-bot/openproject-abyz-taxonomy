@@ -329,7 +329,7 @@
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
       '<span>' + escapeHtml(title.name) + '</span>',
-      '<span class="abyz-taxonomy-row-meta">project_title, 실제 Project 아님, ' + count + '개 Project</span>',
+      '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
       taxonomyRowActionButtons(title.code),
@@ -566,7 +566,7 @@
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
       '<span>' + escapeHtml(section.name) + '</span>',
-      '<span class="abyz-taxonomy-row-meta">wp_section, 실제 WP 아님, ' + count + '개 WP</span>',
+      '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(section)) + ', 실제 WP 아님, ' + count + '개 WP</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
       taxonomyRowActionButtons(section.code),
@@ -880,7 +880,7 @@
       return;
     }
 
-    var confirmed = window.confirm(taxonomyTypeLabel(node) + " '" + node.name + "'을(를) 삭제합니까?\n실제 Project/WP는 삭제되지 않고 분류 연결만 제거됩니다.");
+    var confirmed = window.confirm(taxonomyTypeLabel(node) + " '" + node.name + "'을(를) 삭제합니까?\n실제 Project/WP는 삭제되지 않고 구분 row만 비활성화됩니다.");
     if (!confirmed) {
       return;
     }

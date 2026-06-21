@@ -136,6 +136,37 @@ module API
             status(result[:valid] ? 200 : 422)
             result
           end
+
+          namespace :nodes do
+            route_param :code, requirements: { code: /[^\/]+/ }, type: String do
+              patch do
+                node = ::AbyzTaxonomy::TaxonomyService.update_node!(params[:code], request_payload)
+
+                {
+                  _type: "AbyzTaxonomyNode",
+                  node: ::AbyzTaxonomy::TaxonomyService.serialize_node(node)
+                }
+              rescue ::AbyzTaxonomy::TaxonomyError => e
+                taxonomy_error!(e)
+              rescue ActiveRecord::RecordInvalid => e
+                taxonomy_error!(::AbyzTaxonomy::TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+              end
+
+              delete do
+                node = ::AbyzTaxonomy::TaxonomyService.delete_node!(params[:code])
+
+                {
+                  _type: "AbyzTaxonomyDeletedNode",
+                  code: node.code,
+                  active: node.active
+                }
+              rescue ::AbyzTaxonomy::TaxonomyError => e
+                taxonomy_error!(e)
+              rescue ActiveRecord::RecordInvalid => e
+                taxonomy_error!(::AbyzTaxonomy::TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+              end
+            end
+          end
         end
       end
     end
