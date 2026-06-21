@@ -14,6 +14,34 @@ The plugin injects browser UI into the OpenProject Project and Work Package
 screens through plugin assets. OpenProject core data remains native Project/WP
 records; display-only title/section rows live in `abyz_taxonomy_*` tables.
 
+## Current Development State
+
+As of 2026-06-21, the isolated development instance runs:
+
+```text
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.23
+Container: openproject-taxonomy-openproject-taxonomy-1
+Access:    http://localhost:8087
+           http://10.20.6.187:8087
+           http://100.110.194.101:8087
+```
+
+The production OpenProject instance is not this plugin container. Production is
+`openproject-stack-openproject-1` on `openproject/openproject:17` and must not be
+restarted or modified during development validation.
+
+Latest verified development data reset:
+
+```text
+Projects:          3
+WorkPackages:      1
+Taxonomy nodes:    4
+Assignments:       4
+Sample screenshots:
+  test-results/op-taxonomy/final-selector-20260621112030/sample-project-list.png
+  test-results/op-taxonomy/final-selector-20260621112030/sample-project-selector.png
+```
+
 ## Endpoints
 
 ```text
@@ -55,6 +83,7 @@ Project list:
 6. The top-left project selector also shows the display-only portfolio/program/title row and the linked Project directly below it, without management buttons.
 7. Use the display-only row's `...` menu, matching the native Project row pattern, to open settings, create a child Project, or delete/hide the taxonomy node. Delete sets `active=false`; it does not delete the real Project.
 8. The title row has no Project link/status/date/progress of its own.
+9. Display-only portfolio/program/title rows are left-aligned in both the active Project list and the top-left Project selector. Linked Projects are rendered directly below the grouping row with a visible indent.
 
 Work package table:
 
@@ -66,6 +95,7 @@ Work package table:
 6. Dated WorkPackages render their Gantt bar on the WorkPackage row, with a matching timeline spacer for the section row.
 7. Use the display-only section row's `...` menu, matching the native WorkPackage context-menu pattern, to open details, create a WorkPackage, or delete/hide the taxonomy node. Delete sets `active=false`; it does not delete the real WorkPackage.
 8. The section row has no WorkPackage id/status/assignee/dates of its own.
+9. Context menus are closed before modal/delete actions proceed, so leftover dropdown DOM must not intercept the next row click.
 
 Native creation guard:
 
@@ -115,13 +145,16 @@ curl -u "apikey:${OP_API_KEY}" -H "Content-Type: application/json" \
 Build from the repository root:
 
 ```bash
-docker build -f custom-openproject/Dockerfile -t openproject-abyz-taxonomy:17 .
+OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
 ```
 
-Staging boot from the repository root:
+Development boot from the repository root:
 
 ```bash
-docker compose --env-file .env -f custom-openproject/docker-compose.taxonomy.yml up -d
+docker compose -p openproject-taxonomy \
+  --env-file custom-openproject/.env \
+  -f custom-openproject/docker-compose.taxonomy.yml \
+  up -d
 ```
 
 ## E2E
@@ -143,3 +176,15 @@ portfolio/program/title labels, settings form editing, and node management API,
 Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
 validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.
+
+Latest passing run:
+
+```text
+Result: test-results/op-taxonomy/20260621111705/result.json
+Selector alignment:
+  titleTextAlign=left
+  titleOffsetFromList=13px
+  childTextIndentPx=16px
+Project list child indent: 46px
+Gantt timeline aligned: true
+```

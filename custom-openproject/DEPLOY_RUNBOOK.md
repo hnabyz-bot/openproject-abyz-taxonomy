@@ -1,6 +1,6 @@
 # OpenProject Taxonomy 커스텀 확장 — 배포 런북
 
-**대상 버전**: openproject-abyz-taxonomy:17.5.0-0.1.0  
+**대상 버전**: openproject-abyz-taxonomy:17.5.0-0.2.23
 **운영 인스턴스**: `openproject-stack` (raspi5p, plm.abyz-lab.work)  
 **관련 SPEC**: SPEC-OP-TAXONOMY-001 v0.3.0  
 **관련 이슈**: hnabyz-bot/abyz-lab-pm #56, #57~#63
@@ -16,6 +16,27 @@
 
 ---
 
+## 현재 개발용 검증 상태 (2026-06-21)
+
+| 항목 | 값 |
+|---|---|
+| 개발 image | `openproject-abyz-taxonomy:17.5.0-0.2.23` |
+| 개발 compose project | `openproject-taxonomy` |
+| 개발 OP container | `openproject-taxonomy-openproject-taxonomy-1` |
+| 개발 access proxy | `openproject-taxonomy-access` |
+| 개발 URL | `http://localhost:8087`, `http://10.20.6.187:8087`, `http://100.110.194.101:8087` |
+| 운영 OP container | `openproject-stack-openproject-1`, `openproject/openproject:17` |
+| 운영 반영 | 미실행 |
+
+최종 검증:
+
+- 전체 E2E: `test-results/op-taxonomy/20260621111705/result.json`
+- Project selector 캡처: `test-results/op-taxonomy/final-selector-20260621112030/sample-project-selector.png`
+- 활성 프로젝트 목록 캡처: `test-results/op-taxonomy/final-selector-20260621112030/sample-project-list.png`
+- 최종 개발 DB: Project 3개, WP 1개, taxonomy node 4개, assignment 4개
+
+---
+
 ## 0. 전제조건 체크리스트
 
 Phase 6 진입 전 모든 항목 ✅ 확인 필수.
@@ -23,11 +44,11 @@ Phase 6 진입 전 모든 항목 ✅ 확인 필수.
 | # | 항목 | 확인 방법 |
 |---|---|---|
 | 1 | 최신 DB/assets 백업 존재 (24시간 이내) | `ls -la ~/workspace/backups/openproject-$(date +%Y%m%d)*` |
-| 2 | Custom image 빌드 성공 | `docker image inspect openproject-abyz-taxonomy:17.5.0-0.1.0` |
+| 2 | Custom image 빌드 성공 | `docker image inspect openproject-abyz-taxonomy:17.5.0-0.2.23` |
 | 3 | Staging에서 E2E TC-001~TC-060 전 통과 | `test-results/op-taxonomy/<date>/` 존재 확인 |
 | 4 | TC-070 (Rollback Path A) staging 실증 통과 | 아래 Section 3 절차 사전 실행 |
 | 5 | TC-080 (Migration additive-only) 통과 | `grep` 출력 없음 확인 (Section 6 참고) |
-| 6 | Image 아카이브 생성 완료 | `/backup/op-taxonomy-17.5.0-0.1.0-<date>.tar.gz` 존재 |
+| 6 | Image 아카이브 생성 완료 | `/backup/op-taxonomy-17.5.0-0.2.23-<date>.tar.gz` 존재 |
 | 7 | 사용자 명시 승인 | AskUserQuestion 응답 또는 명시적 "진행" 승인 |
 
 ---
@@ -45,9 +66,9 @@ docker compose -p openproject-stack config | grep 'image:'
 | 상태 | OP_IMAGE 값 | 설명 |
 |---|---|---|
 | 운영 (기본) | `openproject/openproject:17.5.0` | 표준 이미지, taxonomy 기능 없음 |
-| Custom 배포 후 | `openproject-abyz-taxonomy:17.5.0-0.1.0` | 커스텀 이미지, taxonomy 활성 |
+| Custom 배포 후 | `openproject-abyz-taxonomy:17.5.0-0.2.23` | 커스텀 이미지, taxonomy 활성 |
 | Rollback Path A | `openproject/openproject:17.5.0` | 표준 이미지 복귀 |
-| OP 업그레이드 후 | `openproject-abyz-taxonomy:17.6.0-0.1.0` | 새 버전 커스텀 이미지 |
+| OP 업그레이드 후 | `openproject-abyz-taxonomy:<op-version>-0.2.23` | 새 버전 커스텀 이미지 |
 
 ---
 
@@ -61,9 +82,9 @@ ls -la ~/workspace/backups/ | grep openproject-$(date +%Y%m%d) || echo "경고: 
 
 # Step 2 — 현재 실행 이미지 아카이브 보존
 BACKUP_DATE=$(date +%Y%m%d)
-docker save openproject-abyz-taxonomy:17.5.0-0.1.0 | \
-  gzip > ~/workspace/backups/op-taxonomy-17.5.0-0.1.0-${BACKUP_DATE}.tar.gz
-echo "이미지 아카이브 완료: op-taxonomy-17.5.0-0.1.0-${BACKUP_DATE}.tar.gz"
+docker save openproject-abyz-taxonomy:17.5.0-0.2.23 | \
+  gzip > ~/workspace/backups/op-taxonomy-17.5.0-0.2.23-${BACKUP_DATE}.tar.gz
+echo "이미지 아카이브 완료: op-taxonomy-17.5.0-0.2.23-${BACKUP_DATE}.tar.gz"
 
 # Step 3 — 현재 실행 중인 이미지 기록
 docker inspect openproject-stack-openproject-1 --format '{{.Config.Image}}' > \
@@ -75,7 +96,7 @@ cd ~/workspace/openproject-stack
 docker compose -p openproject-stack down
 
 # Step 5 — .env 전환
-echo "OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.1.0" > .env
+echo "OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.23" > .env
 cat .env   # 확인
 
 # Step 6 — 재기동
@@ -174,11 +195,11 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" \
 ```bash
 # 1. 새 버전 custom image 빌드 (build.sh)
 cd ~/workspace/work-github/abyz-lab-pm/custom-openproject
-OP_VERSION=17.6.0 ABYZ_VERSION=0.1.0 ./build.sh
+OP_VERSION=17.6.0 ABYZ_VERSION=0.2.23 ./build.sh
 # 빌드 실패 시 → Section 6 (patch 실패 임시 운영) 참고
 
 # 2. 새 이미지 staging 검증 완료 후 .env 전환
-echo "OP_IMAGE=openproject-abyz-taxonomy:17.6.0-0.1.0" > ~/workspace/openproject-stack/.env
+echo "OP_IMAGE=openproject-abyz-taxonomy:17.6.0-0.2.23" > ~/workspace/openproject-stack/.env
 
 # 3. 이하 표준 배포 절차 (Section 2) 동일
 ```
@@ -200,7 +221,7 @@ echo "OP_IMAGE=openproject-abyz-taxonomy:17.6.0-0.1.0" > ~/workspace/openproject
 ```bash
 # 현재 실행 중인 custom image 버전 확인
 docker inspect openproject-stack-openproject-1 --format '{{.Config.Image}}'
-# 기대값: openproject-abyz-taxonomy:17.5.0-0.1.0 (또는 현재 버전)
+# 기대값: openproject-abyz-taxonomy:17.5.0-0.2.23 (또는 현재 버전)
 
 # 현재 이미지 상태 확인
 docker compose -p openproject-stack config | grep 'image:'
@@ -228,11 +249,11 @@ grep -n "ALTER TABLE\|DROP COLUMN\|RENAME COLUMN\|DROP TABLE" \
 
 ```bash
 # 배포 전 현재 custom image 아카이브
-docker save openproject-abyz-taxonomy:17.5.0-0.1.0 | \
-  gzip > ~/workspace/backups/op-taxonomy-17.5.0-0.1.0-$(date +%Y%m%d).tar.gz
+docker save openproject-abyz-taxonomy:17.5.0-0.2.23 | \
+  gzip > ~/workspace/backups/op-taxonomy-17.5.0-0.2.23-$(date +%Y%m%d).tar.gz
 
 # 아카이브에서 복원 (필요 시)
-docker load < ~/workspace/backups/op-taxonomy-17.5.0-0.1.0-YYYYMMDD.tar.gz
+docker load < ~/workspace/backups/op-taxonomy-17.5.0-0.2.23-YYYYMMDD.tar.gz
 
 # 보관 목록 확인
 ls -lh ~/workspace/backups/op-taxonomy-*.tar.gz
