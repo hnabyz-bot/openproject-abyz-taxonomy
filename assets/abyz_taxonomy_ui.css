@@ -1,0 +1,138 @@
+.abyz-taxonomy-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.abyz-taxonomy-actions.-project {
+  margin-bottom: 0.75rem;
+}
+
+.abyz-taxonomy-actions .button {
+  white-space: nowrap;
+}
+
+.abyz-taxonomy-project-title-row td,
+.abyz-taxonomy-wp-section-row td {
+  background: var(--body-background, #fff);
+  border-top: 1px solid var(--borderColor-muted, #d8dee4);
+  border-bottom: 1px solid var(--borderColor-muted, #d8dee4);
+}
+
+.abyz-taxonomy-title-cell,
+.abyz-taxonomy-section-cell {
+  padding: 0.65rem 0.75rem;
+}
+
+.abyz-taxonomy-row-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.25rem;
+}
+
+.abyz-taxonomy-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.abyz-taxonomy-row-label::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.75rem;
+  background: #0969da;
+}
+
+.abyz-taxonomy-row-meta {
+  color: var(--fgColor-muted, #57606a);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.abyz-taxonomy-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.abyz-taxonomy-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.38);
+  padding: 1rem;
+}
+
+.abyz-taxonomy-modal {
+  width: min(34rem, 100%);
+  background: var(--body-background, #fff);
+  border-radius: 6px;
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 0.28);
+  border: 1px solid var(--borderColor-muted, #d8dee4);
+}
+
+.abyz-taxonomy-modal header,
+.abyz-taxonomy-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--borderColor-muted, #d8dee4);
+}
+
+.abyz-taxonomy-modal footer {
+  border-top: 1px solid var(--borderColor-muted, #d8dee4);
+  border-bottom: 0;
+  justify-content: flex-end;
+}
+
+.abyz-taxonomy-modal h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.abyz-taxonomy-form {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.abyz-taxonomy-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.abyz-taxonomy-form input,
+.abyz-taxonomy-form select,
+.abyz-taxonomy-form textarea {
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+.abyz-taxonomy-error {
+  color: #b42318;
+  min-height: 1.25rem;
+}
+
+@media (max-width: 700px) {
+  .abyz-taxonomy-row-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .abyz-taxonomy-actions {
+    flex-wrap: wrap;
+  }
+}

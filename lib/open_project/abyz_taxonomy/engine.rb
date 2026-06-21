@@ -24,6 +24,10 @@ module OpenProject
 
         mount ::API::V3::AbyzTaxonomy::ProjectAbyzTaxonomyAPI
       end
+
+      config.to_prepare do
+        require "open_project/abyz_taxonomy/hooks"
+      end
     end
   end
 end

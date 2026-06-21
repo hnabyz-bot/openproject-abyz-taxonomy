@@ -4,6 +4,14 @@ module AbyzTaxonomy
   class Node < ApplicationRecord
     self.table_name = "abyz_taxonomy_nodes"
 
+    NODE_KINDS = %w[
+      title
+      project_title
+      project_category
+      wp_section
+      wp_category
+    ].freeze
+
     has_many :children,
              class_name: "AbyzTaxonomy::Node",
              foreign_key: :parent_id,
@@ -19,10 +27,10 @@ module AbyzTaxonomy
                inverse_of: :children
 
     validates :scope_type, :node_kind, :code, :name, presence: true
+    validates :node_kind, inclusion: { in: NODE_KINDS }
     validates :code, uniqueness: true
 
     scope :active, -> { where(active: true) }
     scope :ordered, -> { order(:scope_type, :position, :name) }
   end
 end
-

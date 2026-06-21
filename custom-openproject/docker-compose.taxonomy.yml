@@ -1,6 +1,6 @@
 services:
   openproject-taxonomy:
-    image: openproject-abyz-taxonomy:17.5.0-0.1.0
+    image: openproject-abyz-taxonomy:17.5.0-0.2.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:18087:80"
