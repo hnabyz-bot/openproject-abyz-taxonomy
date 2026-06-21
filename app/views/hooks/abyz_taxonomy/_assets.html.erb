@@ -1,2 +1,5 @@
-<%= stylesheet_link_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.css", media: "all" %>
-<%= javascript_include_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.js", defer: true %>
+<% current_user = User.current %>
+<% if current_user.respond_to?(:logged?) && current_user.logged? && current_user.admin? %>
+  <%= stylesheet_link_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.css", media: "all" %>
+  <%= javascript_include_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.js", defer: true %>
+<% end %>
