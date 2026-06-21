@@ -50,8 +50,8 @@ Project list:
 3. Use `포트폴리오 추가`, `프로그램 추가`, or `타이틀 추가` to create a display-only `project_title`.
 4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
 5. The created Project is moved directly under its display-only title row in the active Project list.
-6. The top-left project selector also shows the display-only portfolio/program/title row and the linked Project directly below it.
-7. Use `편집`/`삭제` on the display-only row to change or hide the taxonomy node. Delete sets `active=false`; it does not delete the real Project.
+6. The top-left project selector also shows the display-only portfolio/program/title row and the linked Project directly below it, without management buttons.
+7. Use the display-only row's `...` menu, matching the native Project row pattern, to open settings, create a child Project, or delete/hide the taxonomy node. Delete sets `active=false`; it does not delete the real Project.
 8. The title row has no Project link/status/date/progress of its own.
 
 Work package table:
@@ -62,7 +62,7 @@ Work package table:
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
 5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
 6. Dated WorkPackages render their Gantt bar on the WorkPackage row, with a matching timeline spacer for the section row.
-7. Use `편집`/`삭제` on the display-only section row to change or hide the taxonomy node. Delete sets `active=false`; it does not delete the real WorkPackage.
+7. Use the display-only section row's `...` menu, matching the native WorkPackage context-menu pattern, to open details, create a WorkPackage, or delete/hide the taxonomy node. Delete sets `active=false`; it does not delete the real WorkPackage.
 8. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
@@ -135,8 +135,9 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 The test creates, edits, and soft-deletes display-only taxonomy nodes, creates a
 Project, WP section, and dated WorkPackage through the browser UI, verifies the
-app-header global quick-add menu, top-left project selector taxonomy rows,
-portfolio/program/title labels and node management API,
+app-header global quick-add menu, top-left project selector taxonomy rows
+without management buttons, Project/WP-like `...` row menus,
+portfolio/program/title labels, settings form editing, and node management API,
 Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
 validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.

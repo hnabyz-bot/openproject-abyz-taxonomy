@@ -63,6 +63,32 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
+    def edit_node
+      @node = TaxonomyService.find_node!(params[:code])
+      @taxonomy_label = taxonomy_label(@node)
+      @back_path = node_back_path(@node)
+    rescue TaxonomyError => e
+      render plain: e.message, status: e.status
+    end
+
+    def update_node_settings
+      node = TaxonomyService.update_node!(params[:code], taxonomy_settings_params)
+
+      redirect_to node_settings_path(node), notice: "#{taxonomy_label(node)} 세부 정보가 업데이트되었습니다."
+    rescue TaxonomyError => e
+      @node = TaxonomyService.find_node!(params[:code])
+      @taxonomy_label = taxonomy_label(@node)
+      @back_path = node_back_path(@node)
+      flash.now[:error] = e.message
+      render :edit_node, status: e.status
+    rescue ActiveRecord::RecordInvalid => e
+      @node = e.record
+      @taxonomy_label = taxonomy_label(@node)
+      @back_path = node_back_path(@node)
+      flash.now[:error] = e.record.errors.full_messages.join(", ")
+      render :edit_node, status: :unprocessable_entity
+    end
+
     def update_node
       node = TaxonomyService.update_node!(params[:code], taxonomy_params)
 
@@ -95,6 +121,39 @@ module AbyzTaxonomy
     def taxonomy_params
       raw_params = request.request_parameters.presence || params.to_unsafe_h
       raw_params.except("controller", "action", "ui", "format")
+    end
+
+    def taxonomy_settings_params
+      raw = params.fetch(:node, {}).to_unsafe_h
+      {
+        "name" => raw["name"],
+        "code" => raw["code"],
+        "description" => raw["description"],
+        "taxonomyType" => raw["taxonomy_type"]
+      }.compact
+    end
+
+    def node_settings_path(node)
+      "/abyz_taxonomy/ui/nodes/#{ERB::Util.url_encode(node.code)}/settings/general"
+    end
+
+    def node_back_path(node)
+      if node.node_kind == TaxonomyService::WP_SECTION_KIND && node.scope_id
+        project = Project.find_by(id: node.scope_id)
+        return "/projects/#{project.identifier}/work_packages" if project
+      end
+
+      "/projects"
+    end
+
+    def taxonomy_label(node)
+      taxonomy_type = node.rules_json && node.rules_json["taxonomyType"]
+
+      return "포트폴리오" if taxonomy_type == "portfolio"
+      return "프로그램" if taxonomy_type == "program"
+      return "섹션" if node.node_kind == TaxonomyService::WP_SECTION_KIND
+
+      "타이틀"
     end
 
     def render_taxonomy_error(error)

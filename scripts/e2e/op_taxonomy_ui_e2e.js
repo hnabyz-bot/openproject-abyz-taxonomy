@@ -73,6 +73,30 @@ async function openWorkPackageCreateMenu(page) {
     .waitFor({ state: "visible", timeout: 90000 });
 }
 
+async function openNodeMenu(page, code) {
+  await suppressOnboarding(page);
+  await page.locator(`[data-abyz-taxonomy-code="${code}"] [data-abyz-action="open-node-menu"]`).first().click();
+  await page.locator('[data-test-selector="abyz-taxonomy-node-menu"]').waitFor({ state: "visible", timeout: 90000 });
+}
+
+async function clickNodeMenuItem(page, text) {
+  await page.locator('[data-test-selector="abyz-taxonomy-node-menu"]').getByText(text, { exact: true }).click();
+}
+
+async function updateNodeThroughSettings(page, code, name, taxonomyType) {
+  await openNodeMenu(page, code);
+  await clickNodeMenuItem(page, "타이틀 설정");
+  await page.locator("#node_name").waitFor({ state: "visible", timeout: 90000 });
+  await page.locator("#node_name").fill(name);
+  if (taxonomyType) {
+    await page.locator("#node_taxonomy_type").selectOption(taxonomyType);
+  }
+  await Promise.all([
+    page.waitForLoadState("domcontentloaded"),
+    page.locator('button[type="submit"]').filter({ hasText: "세부 정보 업데이트" }).click()
+  ]);
+}
+
 async function verifyNativeWorkPackageForm(page, projectIdentifier) {
   await page.keyboard.press("Escape").catch(() => {});
   await suppressOnboarding(page);
@@ -180,10 +204,25 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await screenshot(page, "02-project-title-row");
     evidence.screenshots.push("02-project-title-row.png");
 
-    await page.locator(`[data-abyz-taxonomy-code="${titleCode}"] [data-abyz-action="edit-node"]`).first().click();
-    await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(editedTitleName);
-    await page.locator('#abyz-taxonomy-modal-root select[name="taxonomyType"]').selectOption("program");
-    await clickAndSave(page);
+    evidence.projectTitleRowUxBeforeEdit = await page.evaluate((titleCode) => {
+      const row = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
+      return {
+        hasVisibleEditButton: !!(row && Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "편집")),
+        hasVisibleDeleteButton: !!(row && Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "삭제")),
+        hasContextMenuButton: !!(row && row.querySelector('[data-abyz-action="open-node-menu"]'))
+      };
+    }, titleCode);
+    if (
+      evidence.projectTitleRowUxBeforeEdit.hasVisibleEditButton ||
+      evidence.projectTitleRowUxBeforeEdit.hasVisibleDeleteButton ||
+      !evidence.projectTitleRowUxBeforeEdit.hasContextMenuButton
+    ) {
+      throw new Error(`Project-like row UX assertion failed: ${JSON.stringify(evidence.projectTitleRowUxBeforeEdit)}`);
+    }
+
+    await updateNodeThroughSettings(page, titleCode, editedTitleName, "program");
+    await page.goto(url("/projects"), { waitUntil: "domcontentloaded" });
+    await suppressOnboarding(page);
     await waitForText(page, editedTitleName);
     await page.waitForFunction(({ titleCode, editedTitleTypeLabel }) => {
       const row = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
@@ -233,15 +272,13 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await suppressOnboarding(page);
     await waitForText(page, deleteTitleName);
     page.once("dialog", (dialog) => dialog.accept());
-    await page.locator(`[data-abyz-taxonomy-code="${deleteTitleCode}"] [data-abyz-action="delete-node"]`).first().click();
+    await openNodeMenu(page, deleteTitleCode);
+    await clickNodeMenuItem(page, "삭제");
     await page.waitForFunction((code) => !document.querySelector(`[data-abyz-taxonomy-code="${code}"]`), deleteTitleCode, { timeout: 90000 });
     evidence.deletedProjectTitle = true;
 
-    await page
-      .locator('[data-test-selector="abyz-taxonomy-project-title-row"]')
-      .filter({ hasText: editedTitleName })
-      .locator('[data-abyz-action="project-under-title"]')
-      .click();
+    await openNodeMenu(page, titleCode);
+    await clickNodeMenuItem(page, "새 하위 프로젝트");
     await page.locator('#abyz-taxonomy-modal-root select[name="titleCode"]').selectOption(titleCode);
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(projectName);
     await page.locator('#abyz-taxonomy-modal-root input[name="identifier"]').fill(projectIdentifier);
@@ -274,6 +311,9 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
           taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
           projectIdentifier: projectIdentifierFromRow(row),
           hasProgramLabel: row.innerText.includes("프로그램"),
+          hasContextMenuButton: !!row.querySelector('[data-abyz-action="open-node-menu"]'),
+          hasVisibleEditButton: Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "편집"),
+          hasVisibleDeleteButton: Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "삭제"),
           text: row.innerText.trim().replace(/\s+/g, " ")
         };
       });
@@ -284,11 +324,20 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         projectIndex,
         adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
         titleHasProgramLabel: rows[titleIndex] && rows[titleIndex].hasProgramLabel,
+        titleHasContextMenuButton: rows[titleIndex] && rows[titleIndex].hasContextMenuButton,
+        titleHasVisibleEditButton: rows[titleIndex] && rows[titleIndex].hasVisibleEditButton,
+        titleHasVisibleDeleteButton: rows[titleIndex] && rows[titleIndex].hasVisibleDeleteButton,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
 
-    if (!evidence.projectListOrder.adjacent || !evidence.projectListOrder.titleHasProgramLabel) {
+    if (
+      !evidence.projectListOrder.adjacent ||
+      !evidence.projectListOrder.titleHasProgramLabel ||
+      !evidence.projectListOrder.titleHasContextMenuButton ||
+      evidence.projectListOrder.titleHasVisibleEditButton ||
+      evidence.projectListOrder.titleHasVisibleDeleteButton
+    ) {
       throw new Error(`Project title/project adjacency failed: ${JSON.stringify(evidence.projectListOrder)}`);
     }
 
@@ -316,8 +365,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
           index,
           taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
           projectIdentifier: link && identifierFromHref(link.getAttribute("href")),
-          hasEdit: !!row.querySelector('[data-abyz-action="edit-node"]'),
-          hasDelete: !!row.querySelector('[data-abyz-action="delete-node"]'),
+          hasAnyButton: !!row.querySelector("button"),
           hasProgramLabel: row.innerText.includes("프로그램"),
           text: row.innerText.trim().replace(/\s+/g, " ")
         };
@@ -328,16 +376,14 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         titleIndex,
         projectIndex,
         adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
-        titleHasEdit: rows[titleIndex] && rows[titleIndex].hasEdit,
-        titleHasDelete: rows[titleIndex] && rows[titleIndex].hasDelete,
+        titleHasAnyButton: rows[titleIndex] && rows[titleIndex].hasAnyButton,
         titleHasProgramLabel: rows[titleIndex] && rows[titleIndex].hasProgramLabel,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
     if (
       !evidence.projectSelectorOrder.adjacent ||
-      !evidence.projectSelectorOrder.titleHasEdit ||
-      !evidence.projectSelectorOrder.titleHasDelete ||
+      evidence.projectSelectorOrder.titleHasAnyButton ||
       !evidence.projectSelectorOrder.titleHasProgramLabel
     ) {
       throw new Error(`Project selector taxonomy assertion failed: ${JSON.stringify(evidence.projectSelectorOrder)}`);
@@ -371,15 +417,40 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await screenshot(page, "05-wp-section-row");
     evidence.screenshots.push("05-wp-section-row.png");
 
-    await page.locator(`[data-abyz-taxonomy-code="${sectionCode}"] [data-abyz-action="edit-node"]`).first().click();
-    await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(editedSectionName);
-    await clickAndSave(page);
+    evidence.wpSectionRowUxBeforeEdit = await page.evaluate((sectionCode) => {
+      const row = document.querySelector(`[data-abyz-taxonomy-code="${sectionCode}"]`);
+      return {
+        hasVisibleEditButton: !!(row && Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "편집")),
+        hasVisibleDeleteButton: !!(row && Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "삭제")),
+        hasVisibleWpAddButton: !!(row && Array.from(row.querySelectorAll("button")).some((button) => button.innerText.trim() === "WP 추가")),
+        hasContextMenuButton: !!(row && row.querySelector('[data-abyz-action="open-node-menu"]'))
+      };
+    }, sectionCode);
+    if (
+      evidence.wpSectionRowUxBeforeEdit.hasVisibleEditButton ||
+      evidence.wpSectionRowUxBeforeEdit.hasVisibleDeleteButton ||
+      evidence.wpSectionRowUxBeforeEdit.hasVisibleWpAddButton ||
+      !evidence.wpSectionRowUxBeforeEdit.hasContextMenuButton
+    ) {
+      throw new Error(`WP-like section row UX assertion failed: ${JSON.stringify(evidence.wpSectionRowUxBeforeEdit)}`);
+    }
+
+    await openNodeMenu(page, sectionCode);
+    await clickNodeMenuItem(page, "자세히 보기");
+    await page.locator("#node_name").waitFor({ state: "visible", timeout: 90000 });
+    await page.locator("#node_name").fill(editedSectionName);
+    await Promise.all([
+      page.waitForLoadState("domcontentloaded"),
+      page.locator('button[type="submit"]').filter({ hasText: "세부 정보 업데이트" }).click()
+    ]);
+    await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
+    await suppressOnboarding(page);
     await waitForText(page, editedSectionName);
     await screenshot(page, "05b-wp-section-edited");
     evidence.screenshots.push("05b-wp-section-edited.png");
 
-    await openWorkPackageCreateMenu(page);
-    await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-under-section"]').click();
+    await openNodeMenu(page, sectionCode);
+    await clickNodeMenuItem(page, "새 작업 패키지 만들기");
     await page.locator('#abyz-taxonomy-modal-root select[name="sectionCode"]').selectOption(sectionCode);
     await page.locator('#abyz-taxonomy-modal-root input[name="subject"]').fill(wpSubject);
     await page.locator('#abyz-taxonomy-modal-root input[name="startDate"]').fill(wpStartDate);

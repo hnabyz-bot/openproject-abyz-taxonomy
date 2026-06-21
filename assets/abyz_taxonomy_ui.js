@@ -131,6 +131,8 @@
       menu.remove();
     }
 
+    closeTaxonomyContextMenus();
+
     Array.prototype.forEach.call(document.querySelectorAll("[popover]"), function (popover) {
       if (typeof popover.hidePopover === "function") {
         try {
@@ -262,11 +264,79 @@
     return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
   }
 
-  function taxonomyRowActionButtons(code) {
+  function nodeSettingsPath(code) {
+    return "/abyz_taxonomy/ui/nodes/" + encodeURIComponent(code) + "/settings/general";
+  }
+
+  function closeTaxonomyContextMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-node-menu"), function (menu) {
+      menu.remove();
+    });
+  }
+
+  function taxonomyContextMenuButton(label, action, code) {
     return [
-      '<button type="button" class="button" data-abyz-action="edit-node" data-code="' + escapeHtml(code) + '">편집</button>',
-      '<button type="button" class="button -danger" data-abyz-action="delete-node" data-code="' + escapeHtml(code) + '">삭제</button>'
+      '<li role="none">',
+      '<button type="button" role="menuitem" class="ActionListContent ActionListContent--visual16 abyz-taxonomy-menu-action" data-abyz-action="' + escapeHtml(action) + '" data-code="' + escapeHtml(code) + '">',
+      '<span class="ActionListItem-label">' + escapeHtml(label) + '</span>',
+      '</button>',
+      '</li>'
     ].join("");
+  }
+
+  function taxonomyContextMenuLink(label, href) {
+    return [
+      '<li role="none">',
+      '<a role="menuitem" class="ActionListContent ActionListContent--visual16" href="' + escapeHtml(href) + '">',
+      '<span class="ActionListItem-label">' + escapeHtml(label) + '</span>',
+      '</a>',
+      '</li>'
+    ].join("");
+  }
+
+  function taxonomyRowMenuButton(code, context) {
+    return [
+      '<button type="button" class="Button Button--iconOnly Button--invisible Button--small abyz-taxonomy-row-menu-button" aria-label="추가 작업" title="추가 작업" data-abyz-action="open-node-menu" data-code="' + escapeHtml(code) + '" data-context="' + escapeHtml(context) + '">',
+      '<span aria-hidden="true">⋯</span>',
+      '</button>'
+    ].join("");
+  }
+
+  function openTaxonomyContextMenu(trigger) {
+    var code = trigger.getAttribute("data-code");
+    var context = trigger.getAttribute("data-context");
+    var node = taxonomyNodeByCode(code);
+    if (!node) {
+      return;
+    }
+
+    closeTaxonomyContextMenus();
+
+    var rect = trigger.getBoundingClientRect();
+    var menu = document.createElement("ul");
+    menu.className = "dropdown-menu abyz-taxonomy-node-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("data-test-selector", "abyz-taxonomy-node-menu");
+    menu.style.left = Math.max(8, rect.right + window.scrollX - 240) + "px";
+    menu.style.top = (rect.bottom + window.scrollY + 6) + "px";
+
+    if (context === "project-title") {
+      menu.innerHTML = [
+        taxonomyContextMenuButton("새 하위 프로젝트", "project-under-title", code),
+        taxonomyContextMenuLink(taxonomyTypeLabel(node) + " 설정", nodeSettingsPath(code)),
+        '<li role="separator" class="ActionList-sectionDivider"></li>',
+        taxonomyContextMenuButton("삭제", "delete-node", code)
+      ].join("");
+    } else {
+      menu.innerHTML = [
+        taxonomyContextMenuLink("자세히 보기", nodeSettingsPath(code)),
+        taxonomyContextMenuButton("새 작업 패키지 만들기", "wp-under-section", code),
+        '<li role="separator" class="ActionList-sectionDivider"></li>',
+        taxonomyContextMenuButton("삭제", "delete-node", code)
+      ].join("");
+    }
+
+    document.body.appendChild(menu);
   }
 
   function projectIdentifierFromRow(row) {
@@ -332,8 +402,7 @@
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
-      taxonomyRowActionButtons(title.code),
-      '<button type="button" class="button" data-abyz-action="project-under-title" data-code="' + escapeHtml(title.code) + '">프로젝트 추가</button>',
+      taxonomyRowMenuButton(title.code, "project-title"),
       '</div>',
       '</div>',
       '</td>'
@@ -395,10 +464,6 @@
       '<div class="spot-list--item-action abyz-taxonomy-project-select-title-action">',
       '<span class="abyz-taxonomy-project-select-title-label">' + escapeHtml(title.name) + '</span>',
       '<span class="abyz-taxonomy-project-select-title-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님</span>',
-      '<span class="abyz-taxonomy-project-select-actions">',
-      '<button type="button" data-abyz-action="edit-node" data-code="' + escapeHtml(title.code) + '">편집</button>',
-      '<button type="button" data-abyz-action="delete-node" data-code="' + escapeHtml(title.code) + '">삭제</button>',
-      '</span>',
       '</div>'
     ].join("");
     return item;
@@ -569,8 +634,7 @@
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(section)) + ', 실제 WP 아님, ' + count + '개 WP</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
-      taxonomyRowActionButtons(section.code),
-      '<button type="button" class="button" data-abyz-action="wp-under-section" data-code="' + escapeHtml(section.code) + '">WP 추가</button>',
+      taxonomyRowMenuButton(section.code, "wp-section"),
       '</div>',
       '</div>',
       '</td>'
@@ -718,13 +782,11 @@
     context = context || {};
     closeCreateMenus();
     var projectIdentifier = currentProjectIdentifier();
-    var editNode = context.node;
     var heading = {
       projectTitle: context.taxonomyType === "program" ? "프로그램 추가" : (context.taxonomyType === "portfolio" ? "포트폴리오 추가" : "타이틀 추가"),
       project: "타이틀 아래 프로젝트 추가",
       wpSection: "섹션 추가",
-      workPackage: "섹션 아래 WP 추가",
-      taxonomyNode: editNode ? taxonomyTypeLabel(editNode) + " 편집" : "구분 인자 편집"
+      workPackage: "섹션 아래 WP 추가"
     }[kind];
     var body = "";
 
@@ -755,25 +817,6 @@
         '<label>완료일<input name="dueDate" type="date"></label>',
         '<label>설명<textarea name="description" rows="3"></textarea></label>'
       ].join("");
-    } else if (kind === "taxonomyNode" && editNode) {
-      var taxonomyType = editNode.rules && editNode.rules.taxonomyType ? editNode.rules.taxonomyType : "title";
-      var typeControl = "";
-      if (editNode.nodeKind === "project_title" || editNode.nodeKind === "title") {
-        typeControl = [
-          '<label>구분 유형<select name="taxonomyType">',
-          '<option value="portfolio"' + (taxonomyType === "portfolio" ? " selected" : "") + '>포트폴리오</option>',
-          '<option value="program"' + (taxonomyType === "program" ? " selected" : "") + '>프로그램</option>',
-          '<option value="title"' + (taxonomyType === "title" ? " selected" : "") + '>타이틀</option>',
-          '</select></label>'
-        ].join("");
-      }
-
-      body = [
-        typeControl,
-        '<label>이름<input name="name" required autocomplete="off" value="' + escapeHtml(editNode.name) + '"></label>',
-        '<label>코드<input name="code" required autocomplete="off" value="' + escapeHtml(editNode.code) + '"></label>',
-        '<label>설명<textarea name="description" rows="3">' + escapeHtml(editNode.description || "") + '</textarea></label>'
-      ].join("");
     }
 
     var root = document.createElement("div");
@@ -782,7 +825,7 @@
     root.innerHTML = [
       '<section class="abyz-taxonomy-modal" role="dialog" aria-modal="true" aria-labelledby="abyz-taxonomy-modal-title">',
       '<header><h2 id="abyz-taxonomy-modal-title">' + heading + '</h2><button type="button" class="button" data-abyz-action="close-modal">닫기</button></header>',
-      '<form class="abyz-taxonomy-form" data-kind="' + kind + '"' + (editNode ? ' data-code="' + escapeHtml(editNode.code) + '"' : "") + '>',
+      '<form class="abyz-taxonomy-form" data-kind="' + kind + '">',
       body,
       '<div class="abyz-taxonomy-error" data-abyz-error></div>',
       '</form>',
@@ -851,11 +894,6 @@
     };
     var endpoint = endpoints[kind];
     var method = "POST";
-
-    if (kind === "taxonomyNode") {
-      endpoint = "/abyz_taxonomy/ui/nodes/" + encodeURIComponent(form.dataset.code || "");
-      method = "PATCH";
-    }
 
     if (error) {
       error.textContent = "";
@@ -927,9 +965,9 @@
     } else if (action === "wp-under-section") {
       event.preventDefault();
       openModal("workPackage", { code: trigger.getAttribute("data-code") });
-    } else if (action === "edit-node") {
+    } else if (action === "open-node-menu") {
       event.preventDefault();
-      openModal("taxonomyNode", { node: taxonomyNodeByCode(trigger.getAttribute("data-code")) });
+      openTaxonomyContextMenu(trigger);
     } else if (action === "delete-node") {
       event.preventDefault();
       deleteTaxonomyNode(trigger.getAttribute("data-code"));
@@ -950,11 +988,12 @@
       return;
     }
 
-    if (!event.target.closest("#abyz-taxonomy-wp-create-menu") && !event.target.closest("#abyz-taxonomy-modal-root")) {
+    if (!event.target.closest("#abyz-taxonomy-wp-create-menu") && !event.target.closest("#abyz-taxonomy-modal-root") && !event.target.closest(".abyz-taxonomy-node-menu") && !event.target.closest('[data-abyz-action="open-node-menu"]')) {
       var openMenu = document.getElementById("abyz-taxonomy-wp-create-menu");
       if (openMenu) {
         openMenu.remove();
       }
+      closeTaxonomyContextMenus();
     }
   }
 

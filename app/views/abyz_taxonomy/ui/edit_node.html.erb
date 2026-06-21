@@ -1,0 +1,59 @@
+<% html_title "#{@taxonomy_label} 설정" %>
+
+<div class="op-app-content">
+  <div class="op-taxonomy-settings-header">
+    <%= link_to "← 돌아가기", @back_path, class: "Button Button--secondary Button--medium" %>
+    <h1><%= @taxonomy_label %> 설정</h1>
+  </div>
+
+  <% if flash[:error].present? %>
+    <div class="op-taxonomy-settings-error">
+      <%= flash[:error] %>
+    </div>
+  <% end %>
+
+  <% if notice.present? %>
+    <div class="op-taxonomy-settings-notice">
+      <%= notice %>
+    </div>
+  <% end %>
+
+  <section class="op-taxonomy-settings-section">
+    <h2>정보</h2>
+    <h3>기본 세부 정보</h3>
+
+    <form action="/abyz_taxonomy/ui/nodes/<%= ERB::Util.url_encode(@node.code) %>/settings/general" method="post" class="op-taxonomy-settings-form">
+      <input type="hidden" name="_method" value="patch">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+
+      <% if @node.node_kind == AbyzTaxonomy::TaxonomyService::PROJECT_TITLE_KIND || @node.node_kind == AbyzTaxonomy::TaxonomyService::LEGACY_TITLE_KIND %>
+        <div class="FormControl">
+          <label for="node_taxonomy_type" class="FormControl-label">구분 유형</label>
+          <select name="node[taxonomy_type]" id="node_taxonomy_type" class="FormControl-input">
+            <% selected_type = @node.rules_json["taxonomyType"].presence || "title" %>
+            <option value="portfolio" <%= "selected" if selected_type == "portfolio" %>>포트폴리오</option>
+            <option value="program" <%= "selected" if selected_type == "program" %>>프로그램</option>
+            <option value="title" <%= "selected" if selected_type == "title" %>>타이틀</option>
+          </select>
+        </div>
+      <% end %>
+
+      <div class="FormControl">
+        <label for="node_name" class="FormControl-label">이름 *</label>
+        <input type="text" name="node[name]" id="node_name" value="<%= @node.name %>" required class="FormControl-input">
+      </div>
+
+      <div class="FormControl">
+        <label for="node_description" class="FormControl-label">설명</label>
+        <textarea name="node[description]" id="node_description" rows="5" class="FormControl-input"><%= @node.description %></textarea>
+      </div>
+
+      <div class="FormControl">
+        <label for="node_code" class="FormControl-label">식별자</label>
+        <input type="text" name="node[code]" id="node_code" value="<%= @node.code %>" required class="FormControl-input">
+      </div>
+
+      <button type="submit" class="FormField-input flex-self-start Button--secondary Button--medium Button">세부 정보 업데이트</button>
+    </form>
+  </section>
+</div>
