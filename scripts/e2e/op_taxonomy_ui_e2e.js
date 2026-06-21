@@ -88,6 +88,8 @@ async function openWorkPackageCreateMenu(page) {
   const sectionName = `E2E 섹션 ${stamp}`;
   const sectionCode = `wp.${projectIdentifier}.e2e.${stamp.toLowerCase()}`;
   const wpSubject = `E2E WP ${stamp}`;
+  const wpStartDate = "2026-06-22";
+  const wpDueDate = "2026-06-26";
 
   const evidence = {
     baseUrl,
@@ -96,6 +98,8 @@ async function openWorkPackageCreateMenu(page) {
     projectIdentifier,
     sectionCode,
     workPackageSubject: wpSubject,
+    workPackageStartDate: wpStartDate,
+    workPackageDueDate: wpDueDate,
     screenshots: [],
     consoleMessages
   };
@@ -144,6 +148,8 @@ async function openWorkPackageCreateMenu(page) {
     await suppressOnboarding(page);
     await waitForText(page, titleName);
     await waitForText(page, projectName);
+    await page.locator(`[data-abyz-taxonomy-code="${titleCode}"]`).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
     await screenshot(page, "03-project-under-title");
     evidence.screenshots.push("03-project-under-title.png");
     evidence.projectListOrder = await page.evaluate(({ titleCode, projectIdentifier }) => {
@@ -201,6 +207,8 @@ async function openWorkPackageCreateMenu(page) {
     await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-under-section"]').click();
     await page.locator('#abyz-taxonomy-modal-root select[name="sectionCode"]').selectOption(sectionCode);
     await page.locator('#abyz-taxonomy-modal-root input[name="subject"]').fill(wpSubject);
+    await page.locator('#abyz-taxonomy-modal-root input[name="startDate"]').fill(wpStartDate);
+    await page.locator('#abyz-taxonomy-modal-root input[name="dueDate"]').fill(wpDueDate);
     await clickAndSave(page);
     await page.waitForTimeout(5000);
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
@@ -236,6 +244,54 @@ async function openWorkPackageCreateMenu(page) {
 
     if (!evidence.ganttOrder.adjacent) {
       throw new Error(`Gantt section/WP adjacency failed: ${JSON.stringify(evidence.ganttOrder)}`);
+    }
+
+    evidence.ganttTimelineAlignment = await page.evaluate(({ sectionCode, wpSubject }) => {
+      const rows = Array.from(document.querySelectorAll("table.work-package-table tbody tr")).map((row, index) => {
+        const rect = row.getBoundingClientRect();
+        return {
+          index,
+          taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
+          workPackageId: row.getAttribute("data-work-package-id"),
+          text: row.innerText.trim().replace(/\s+/g, " "),
+          y: Math.round(rect.y),
+          height: Math.round(rect.height)
+        };
+      });
+      const sectionRow = rows.find((row) => row.taxonomyCode === sectionCode);
+      const workPackageRow = rows.find((row) => row.text.includes(wpSubject));
+      const timelineSection = document.querySelector(`.abyz-taxonomy-gantt-section-row[data-abyz-taxonomy-code="${sectionCode}"]`);
+      const timelineCell = workPackageRow && document.querySelector(`.wp-timeline-cell[data-work-package-id="${workPackageRow.workPackageId}"]`);
+      const timelineBar = timelineCell && timelineCell.querySelector(".timeline-element.bar");
+      const timelineSectionRect = timelineSection && timelineSection.getBoundingClientRect();
+      const timelineCellRect = timelineCell && timelineCell.getBoundingClientRect();
+      const timelineBarRect = timelineBar && timelineBar.getBoundingClientRect();
+
+      return {
+        sectionRow,
+        workPackageRow,
+        timelineSection: timelineSectionRect && {
+          y: Math.round(timelineSectionRect.y),
+          height: Math.round(timelineSectionRect.height),
+          text: timelineSection.innerText.trim()
+        },
+        timelineCell: timelineCellRect && {
+          workPackageId: timelineCell.getAttribute("data-work-package-id"),
+          y: Math.round(timelineCellRect.y),
+          height: Math.round(timelineCellRect.height)
+        },
+        timelineBar: timelineBarRect && {
+          y: Math.round(timelineBarRect.y),
+          width: Math.round(timelineBarRect.width),
+          text: timelineBar.innerText.trim().replace(/\s+/g, " ")
+        },
+        aligned: !!(workPackageRow && timelineCellRect && Math.abs(workPackageRow.y - timelineCellRect.y) <= 3),
+        hasBar: !!(timelineBarRect && timelineBarRect.width > 0)
+      };
+    }, { sectionCode, wpSubject });
+
+    if (!evidence.ganttTimelineAlignment.aligned || !evidence.ganttTimelineAlignment.hasBar) {
+      throw new Error(`Gantt timeline alignment failed: ${JSON.stringify(evidence.ganttTimelineAlignment)}`);
     }
 
     const tree = await page.evaluate(async () => {

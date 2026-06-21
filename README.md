@@ -55,7 +55,8 @@ Work package table:
 3. Use `섹션 추가` to create a display-only `wp_section`.
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
 5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
-6. The section row has no WorkPackage id/status/assignee/dates of its own.
+6. Dated WorkPackages render their Gantt bar on the WorkPackage row, with a matching timeline spacer for the section row.
+7. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
 
@@ -124,6 +125,7 @@ OP_E2E_API_TOKEN=... \
 node scripts/e2e/op_taxonomy_ui_e2e.js
 ```
 
-The test creates a project title, Project, WP section, and WorkPackage through
-the browser UI, verifies Project/WP/Gantt adjacency, checks the validation API,
-and writes screenshots plus `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.
+The test creates a project title, Project, WP section, and dated WorkPackage
+through the browser UI, verifies Project/WP/Gantt adjacency and Gantt timeline
+row alignment, checks the validation API, and writes screenshots plus
+`trace.zip` under `test-results/op-taxonomy/<timestamp>/`.

@@ -119,19 +119,25 @@ module AbyzTaxonomy
       type = Type.find_by(id: fetch_value(payload, "typeId", "type_id")) || default_type_for(project)
       status = Status.find_by(id: fetch_value(payload, "statusId", "status_id")) || default_status
       priority = IssuePriority.find_by(id: fetch_value(payload, "priorityId", "priority_id")) || default_priority
+      start_date = parse_date(fetch_value(payload, "startDate", "start_date"), "startDate")
+      due_date = parse_date(fetch_value(payload, "dueDate", "due_date"), "dueDate")
 
       raise TaxonomyError, "project has no available work package type" unless type
       raise TaxonomyError, "no default status is available" unless status
       raise TaxonomyError, "no default priority is available" unless priority
 
-      call = ::WorkPackages::CreateService.new(user:).call(
+      attributes = {
         project:,
         type_id: type.id,
         status_id: status.id,
         priority_id: priority.id,
         subject:,
         description: fetch_value(payload, "description")
-      )
+      }
+      attributes[:start_date] = start_date if start_date
+      attributes[:due_date] = due_date if due_date
+
+      call = ::WorkPackages::CreateService.new(user:).call(attributes)
       raise TaxonomyError, call.errors.full_messages.join(", ") unless call.success?
 
       work_package = call.result
@@ -309,6 +315,14 @@ module AbyzTaxonomy
     def slug_or_timestamp(value)
       slug = value.to_s.downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-+|-+\z/, "")
       slug.presence || Time.zone.now.strftime("taxonomy-%Y%m%d%H%M%S")
+    end
+
+    def parse_date(value, field)
+      return nil if value.blank?
+
+      Date.iso8601(value.to_s)
+    rescue ArgumentError
+      raise TaxonomyError, "#{field} must use YYYY-MM-DD"
     end
 
     def serialize_project_titles

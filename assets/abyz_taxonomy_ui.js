@@ -384,6 +384,69 @@
     return row;
   }
 
+  function buildGanttSectionRow(entry, height) {
+    var row = document.createElement("div");
+    row.className = "abyz-taxonomy-gantt-section-row";
+    row.setAttribute("data-abyz-taxonomy-code", entry.section.code);
+    row.style.height = Math.max(40, Math.round(height || 40)) + "px";
+    row.innerHTML = '<span>' + escapeHtml(entry.section.name) + '</span>';
+    return row;
+  }
+
+  function renderGanttSectionRows(projectIdentifier) {
+    var timelineBody = document.querySelector(".wp-table-timeline--body");
+    if (!timelineBody || !state.tree) {
+      return;
+    }
+
+    Array.prototype.forEach.call(timelineBody.querySelectorAll(".abyz-taxonomy-gantt-section-row"), function (row) {
+      row.remove();
+    });
+
+    var cellsById = {};
+    var assignedCells = [];
+    var realCells = Array.prototype.slice.call(timelineBody.children).filter(function (cell) {
+      return !cell.classList.contains("abyz-taxonomy-gantt-section-row");
+    });
+
+    realCells.forEach(function (cell) {
+      var workPackageId = cell.getAttribute("data-work-package-id");
+      if (workPackageId) {
+        cellsById[workPackageId] = cell;
+      }
+    });
+
+    var orderedCells = [];
+    wpSectionEntries()
+      .filter(function (entry) {
+        return entry.project && entry.project.identifier === projectIdentifier;
+      })
+      .forEach(function (entry) {
+        var leftSectionRow = document.querySelector(
+          '.abyz-taxonomy-wp-section-row[data-abyz-taxonomy-code="' + entry.section.code + '"]'
+        );
+        orderedCells.push(buildGanttSectionRow(entry, leftSectionRow ? leftSectionRow.getBoundingClientRect().height : 40));
+
+        (entry.workPackages || []).forEach(function (wp) {
+          var cell = cellsById[String(wp.id)];
+          if (cell) {
+            assignedCells.push(cell);
+            orderedCells.push(cell);
+          }
+        });
+      });
+
+    realCells.forEach(function (cell) {
+      if (assignedCells.indexOf(cell) === -1) {
+        orderedCells.push(cell);
+      }
+    });
+
+    orderedCells.forEach(function (cell) {
+      timelineBody.appendChild(cell);
+    });
+  }
+
   function renderWpSectionRows() {
     var projectIdentifier = currentProjectIdentifier();
     var table = document.querySelector("table.work-package-table");
@@ -394,6 +457,7 @@
 
     var signature = workPackageRenderSignature(tbody, projectIdentifier);
     if (table.dataset.abyzTaxonomySignature === signature) {
+      renderGanttSectionRows(projectIdentifier);
       return;
     }
 
@@ -428,6 +492,7 @@
     });
 
     table.dataset.abyzTaxonomySignature = signature;
+    renderGanttSectionRows(projectIdentifier);
   }
 
   function titleOptions(selectedCode) {
@@ -490,6 +555,8 @@
         '<input type="hidden" name="projectIdentifier" value="' + escapeHtml(projectIdentifier || "") + '">',
         '<label>섹션<select name="sectionCode" required>' + sectionOptions(projectIdentifier, context.code) + '</select></label>',
         '<label>WP 제목<input name="subject" required autocomplete="off"></label>',
+        '<label>시작일<input name="startDate" type="date"></label>',
+        '<label>완료일<input name="dueDate" type="date"></label>',
         '<label>설명<textarea name="description" rows="3"></textarea></label>'
       ].join("");
     }

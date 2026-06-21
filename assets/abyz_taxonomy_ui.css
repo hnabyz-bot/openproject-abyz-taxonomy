@@ -84,6 +84,17 @@
   padding-left: 2rem;
 }
 
+.abyz-taxonomy-gantt-section-row {
+  align-items: center;
+  background: #f3f5f7;
+  border-bottom: 1px solid #d8dee6;
+  color: #44546a;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding-left: 0.75rem;
+}
+
 .abyz-taxonomy-row-inner {
   display: flex;
   align-items: center;

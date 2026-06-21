@@ -1,5 +1,6 @@
 <% current_user = User.current %>
 <% if current_user.respond_to?(:logged?) && current_user.logged? && current_user.admin? %>
-  <%= stylesheet_link_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.css", media: "all" %>
-  <%= javascript_include_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.js", defer: true %>
+  <% asset_version = ENV.fetch("ABYZ_TAXONOMY_ASSET_VERSION", "dev") %>
+  <%= stylesheet_link_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.css?v=#{asset_version}", media: "all" %>
+  <%= javascript_include_tag "/plugin_assets/openproject-abyz-taxonomy/abyz_taxonomy_ui.js?v=#{asset_version}", defer: true %>
 <% end %>
