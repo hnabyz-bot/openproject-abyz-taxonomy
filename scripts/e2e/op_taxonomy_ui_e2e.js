@@ -75,6 +75,8 @@ async function openWorkPackageCreateMenu(page) {
 
 async function openNodeMenu(page, code) {
   await suppressOnboarding(page);
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.locator('[data-test-selector="abyz-taxonomy-node-menu"]').waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
   await page.locator(`[data-abyz-taxonomy-code="${code}"] [data-abyz-action="open-node-menu"]`).first().click();
   await page.locator('[data-test-selector="abyz-taxonomy-node-menu"]').waitFor({ state: "visible", timeout: 90000 });
 }
@@ -384,9 +386,11 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page
       .locator(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
       .waitFor({ state: "visible", timeout: 90000 });
-    await page
-      .locator(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
-      .scrollIntoViewIfNeeded();
+    await page.evaluate((titleCode) => {
+      document
+        .querySelector(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
+        ?.scrollIntoView({ block: "center" });
+    }, titleCode);
     await page.waitForTimeout(500);
     await screenshot(page, "03b-project-selector-taxonomy");
     evidence.screenshots.push("03b-project-selector-taxonomy.png");
@@ -408,19 +412,46 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       });
       const titleIndex = rows.findIndex((row) => row.taxonomyCode === titleCode);
       const projectIndex = rows.findIndex((row) => row.projectIdentifier === projectIdentifier);
+      const list = document.querySelector('[data-test-selector="op-header-project-select--list"]');
+      const titleRow = list && list.querySelector(`.abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`);
+      const projectRow = Array.from(document.querySelectorAll('[data-test-selector="op-header-project-select--list"] li[data-test-selector="op-header-project-select--item"]')).find((row) => {
+        const link = row.querySelector('a[href*="/projects/"]');
+        return link && identifierFromHref(link.getAttribute("href")) === projectIdentifier;
+      });
+      const listRect = list && list.getBoundingClientRect();
+      const titleLabel = titleRow && titleRow.querySelector(".abyz-taxonomy-project-select-title-label");
+      const projectLink = projectRow && projectRow.querySelector('a[href*="/projects/"]');
+      const projectLabel = projectRow && (
+        projectRow.querySelector('[data-test-selector="op-header-project-select--item-title"] span') ||
+        projectRow.querySelector('[data-test-selector="op-header-project-select--item-title"]') ||
+        projectLink
+      );
+      const titleRect = titleLabel && titleLabel.getBoundingClientRect();
+      const projectRect = projectLabel && projectLabel.getBoundingClientRect();
+      const visualAlignment = {
+        titleOffsetFromList: listRect && titleRect ? Math.round(titleRect.left - listRect.left) : null,
+        indentPx: titleRect && projectRect ? Math.round(projectRect.left - titleRect.left) : null,
+        titleTextAlign: titleRow ? getComputedStyle(titleRow.querySelector(".abyz-taxonomy-project-select-title-action")).textAlign : null,
+        titleLabelText: titleLabel ? titleLabel.innerText.trim() : null,
+        projectText: projectLabel ? projectLabel.innerText.trim() : null
+      };
       return {
         titleIndex,
         projectIndex,
         adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
         titleHasAnyButton: rows[titleIndex] && rows[titleIndex].hasAnyButton,
         titleHasProgramLabel: rows[titleIndex] && rows[titleIndex].hasProgramLabel,
+        visualAlignment,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
     if (
       !evidence.projectSelectorOrder.adjacent ||
       evidence.projectSelectorOrder.titleHasAnyButton ||
-      !evidence.projectSelectorOrder.titleHasProgramLabel
+      !evidence.projectSelectorOrder.titleHasProgramLabel ||
+      evidence.projectSelectorOrder.visualAlignment.titleTextAlign !== "left" ||
+      evidence.projectSelectorOrder.visualAlignment.titleOffsetFromList > 24 ||
+      evidence.projectSelectorOrder.visualAlignment.indentPx < 8
     ) {
       throw new Error(`Project selector taxonomy assertion failed: ${JSON.stringify(evidence.projectSelectorOrder)}`);
     }

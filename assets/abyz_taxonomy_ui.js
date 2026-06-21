@@ -988,19 +988,23 @@
       openModal("projectTitle", { taxonomyType: trigger.getAttribute("data-taxonomy-type") || "title" });
     } else if (action === "project-under-title") {
       event.preventDefault();
+      closeTaxonomyContextMenus();
       openModal("project", { code: trigger.getAttribute("data-code") });
     } else if (action === "wp-section") {
       event.preventDefault();
       openModal("wpSection");
     } else if (action === "wp-under-section") {
       event.preventDefault();
+      closeTaxonomyContextMenus();
       openModal("workPackage", { code: trigger.getAttribute("data-code") });
     } else if (action === "open-node-menu") {
       event.preventDefault();
       openTaxonomyContextMenu(trigger);
     } else if (action === "delete-node") {
       event.preventDefault();
-      deleteTaxonomyNode(trigger.getAttribute("data-code"));
+      var code = trigger.getAttribute("data-code");
+      closeTaxonomyContextMenus();
+      deleteTaxonomyNode(code);
     }
   }
 
