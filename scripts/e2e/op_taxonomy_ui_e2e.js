@@ -73,6 +73,29 @@ async function openWorkPackageCreateMenu(page) {
     .waitFor({ state: "visible", timeout: 90000 });
 }
 
+async function verifyNativeWorkPackageForm(page, projectIdentifier) {
+  await page.keyboard.press("Escape").catch(() => {});
+  await suppressOnboarding(page);
+  await openWorkPackageCreateMenu(page);
+
+  const formResponsePromise = page.waitForResponse((response) => {
+    return response.request().method() === "POST" &&
+      response.url().includes(`/api/v3/projects/${projectIdentifier}/work_packages/form`);
+  }, { timeout: 90000 });
+
+  await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="native-work-package"]').click();
+  const formResponse = await formResponsePromise;
+
+  if (formResponse.status() !== 200) {
+    throw new Error(`Native work package form API failed: ${formResponse.status()} ${formResponse.url()}`);
+  }
+
+  return {
+    status: formResponse.status(),
+    url: formResponse.url()
+  };
+}
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -214,6 +237,12 @@ async function openWorkPackageCreateMenu(page) {
     await openWorkPackageCreateMenu(page);
     await screenshot(page, "04-wp-actions");
     evidence.screenshots.push("04-wp-actions.png");
+    evidence.nativeWorkPackageFormApi = await verifyNativeWorkPackageForm(page, projectIdentifier);
+    await screenshot(page, "04b-native-wp-type-menu");
+    evidence.screenshots.push("04b-native-wp-type-menu.png");
+    await page.keyboard.press("Escape").catch(() => {});
+    await suppressOnboarding(page);
+    await openWorkPackageCreateMenu(page);
 
     await suppressOnboarding(page);
     await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-section"]').click();
