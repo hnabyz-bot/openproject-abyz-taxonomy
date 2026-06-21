@@ -323,6 +323,23 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       });
       const titleIndex = rows.findIndex((row) => row.taxonomyCode === titleCode);
       const projectIndex = rows.findIndex((row) => row.projectIdentifier === projectIdentifier);
+      const titleRow = document.querySelector(`[data-abyz-taxonomy-code="${titleCode}"]`);
+      const projectRow = Array.from(document.querySelectorAll("#project-table tbody tr")).find((row) => projectIdentifierFromRow(row) === projectIdentifier);
+      const titleNameCell = titleRow && titleRow.querySelector("td.name.abyz-taxonomy-title-cell");
+      const projectNameCell = projectRow && projectRow.querySelector("td.name");
+      const titleLabel = titleNameCell && titleNameCell.querySelector(".abyz-taxonomy-row-label");
+      const titleText = titleLabel && titleLabel.querySelector("span");
+      const projectLink = projectNameCell && projectNameCell.querySelector('a[href*="/projects/"]');
+      const titleRect = titleText && titleText.getBoundingClientRect();
+      const projectRect = projectLink && projectLink.getBoundingClientRect();
+      const visualAlignment = {
+        titleCellIndex: titleNameCell ? Array.from(titleRow.children).indexOf(titleNameCell) : -1,
+        projectNameCellIndex: projectNameCell ? Array.from(projectRow.children).indexOf(projectNameCell) : -1,
+        titleTextAlign: titleNameCell ? getComputedStyle(titleNameCell).textAlign : null,
+        titleLeft: titleRect ? Math.round(titleRect.left) : null,
+        childProjectLeft: projectRect ? Math.round(projectRect.left) : null,
+        indentPx: titleRect && projectRect ? Math.round(projectRect.left - titleRect.left) : null
+      };
       return {
         titleIndex,
         projectIndex,
@@ -331,6 +348,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
         titleHasContextMenuButton: rows[titleIndex] && rows[titleIndex].hasContextMenuButton,
         titleHasVisibleEditButton: rows[titleIndex] && rows[titleIndex].hasVisibleEditButton,
         titleHasVisibleDeleteButton: rows[titleIndex] && rows[titleIndex].hasVisibleDeleteButton,
+        visualAlignment,
         rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
       };
     }, { titleCode, projectIdentifier });
@@ -340,7 +358,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       !evidence.projectListOrder.titleHasProgramLabel ||
       !evidence.projectListOrder.titleHasContextMenuButton ||
       evidence.projectListOrder.titleHasVisibleEditButton ||
-      evidence.projectListOrder.titleHasVisibleDeleteButton
+      evidence.projectListOrder.titleHasVisibleDeleteButton ||
+      evidence.projectListOrder.visualAlignment.titleTextAlign !== "left" ||
+      evidence.projectListOrder.visualAlignment.titleCellIndex !== evidence.projectListOrder.visualAlignment.projectNameCellIndex ||
+      evidence.projectListOrder.visualAlignment.indentPx < 8
     ) {
       throw new Error(`Project title/project adjacency failed: ${JSON.stringify(evidence.projectListOrder)}`);
     }

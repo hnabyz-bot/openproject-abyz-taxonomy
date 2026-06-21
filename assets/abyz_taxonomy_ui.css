@@ -80,8 +80,28 @@
   padding: 0.65rem 0.75rem;
 }
 
-.abyz-taxonomy-project-child-row td:first-child {
-  padding-left: 2rem;
+.abyz-taxonomy-project-title-row .abyz-taxonomy-title-cell {
+  text-align: left;
+}
+
+.abyz-taxonomy-project-title-row .abyz-taxonomy-project-title-spacer,
+.abyz-taxonomy-project-title-row .abyz-taxonomy-title-filler,
+.abyz-taxonomy-project-title-row .abyz-taxonomy-title-actions-cell {
+  padding-bottom: 0.65rem;
+  padding-top: 0.65rem;
+}
+
+.abyz-taxonomy-project-title-row .abyz-taxonomy-title-actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.abyz-taxonomy-project-title-row .abyz-taxonomy-row-inner {
+  justify-content: flex-start;
+}
+
+.abyz-taxonomy-project-child-row td.name.project--hierarchy {
+  padding-left: calc(0.375rem + 6ch);
 }
 
 .abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
@@ -108,7 +128,7 @@
 }
 
 .abyz-taxonomy-project-select-child .spot-list--item-action {
-  padding-left: 1.75rem;
+  padding-left: calc(0.75rem + 2ch);
 }
 
 .abyz-taxonomy-gantt-section-row {

@@ -387,24 +387,45 @@
     return identifiers.join("|") + "::" + titles.join("|");
   }
 
-  function buildProjectTitleRow(entry, colspan) {
+  function buildProjectTitleRow(entry, columnCount) {
     var title = entry.title;
     var count = entry.projects ? entry.projects.length : 0;
     var row = document.createElement("tr");
+    var fillerColspan = Math.max(columnCount - 4, 1);
     row.className = "abyz-taxonomy-project-title-row";
     row.setAttribute("data-abyz-taxonomy-code", title.code);
     row.setAttribute("data-test-selector", "abyz-taxonomy-project-title-row");
+    if (columnCount < 4) {
+      row.innerHTML = [
+        '<td colspan="' + columnCount + '" class="abyz-taxonomy-title-cell">',
+        '<div class="abyz-taxonomy-row-inner">',
+        '<div class="abyz-taxonomy-row-label">',
+        '<span>' + escapeHtml(title.name) + '</span>',
+        '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
+        '</div>',
+        '<div class="abyz-taxonomy-row-actions">',
+        taxonomyRowMenuButton(title.code, "project-title"),
+        '</div>',
+        '</div>',
+        '</td>'
+      ].join("");
+      return row;
+    }
+
     row.innerHTML = [
-      '<td colspan="' + colspan + '" class="abyz-taxonomy-title-cell">',
+      '<td class="favorited -w-abs-45 abyz-taxonomy-project-title-spacer"></td>',
+      '<td class="hierarchy abyz-taxonomy-project-title-spacer"></td>',
+      '<td class="name project--hierarchy abyz-taxonomy-title-cell">',
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
       '<span>' + escapeHtml(title.name) + '</span>',
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
-      '<div class="abyz-taxonomy-row-actions">',
+      '</div>',
+      '</td>',
+      '<td colspan="' + fillerColspan + '" class="abyz-taxonomy-title-filler"></td>',
+      '<td class="buttons abyz-taxonomy-title-actions-cell">',
       taxonomyRowMenuButton(title.code, "project-title"),
-      '</div>',
-      '</div>',
       '</td>'
     ].join("");
     return row;
