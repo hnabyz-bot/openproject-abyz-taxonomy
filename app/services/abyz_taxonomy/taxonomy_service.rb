@@ -145,6 +145,40 @@ module AbyzTaxonomy
       work_package
     end
 
+    def update_node!(code, payload)
+      node = find_node!(code)
+      name = fetch_value(payload, "name")
+      new_code = fetch_value(payload, "code")
+      taxonomy_type = fetch_value(payload, "taxonomyType", "taxonomy_type")
+
+      node.name = name.to_s.strip if name.present?
+      node.code = new_code.to_s.strip if new_code.present?
+      node.description = fetch_value(payload, "description") if payload_has_key?(payload, "description")
+      node.icon = fetch_value(payload, "icon") if payload_has_key?(payload, "icon")
+      node.color = fetch_value(payload, "color") if payload_has_key?(payload, "color")
+      node.position = fetch_value(payload, "position") if payload_has_key?(payload, "position") && fetch_value(payload, "position").present?
+
+      if taxonomy_type.present? && PROJECT_TITLE_KINDS.include?(node.node_kind)
+        node.rules_json = (node.rules_json || {}).merge("taxonomyType" => taxonomy_type)
+      end
+
+      node.save!
+      node
+    end
+
+    def delete_node!(code)
+      node = find_node!(code)
+
+      Node.transaction do
+        Node.where(parent_id: node.id).update_all(parent_id: nil)
+        Rule.where(node:).delete_all
+        Assignment.where(node:).delete_all
+        node.destroy!
+      end
+
+      node
+    end
+
     def assign_project_to_title!(title_code:, project_identifier:)
       title = find_project_title!(title_code)
       project = find_project!(project_identifier)
@@ -265,6 +299,13 @@ module AbyzTaxonomy
       work_package
     end
 
+    def find_node!(code)
+      node = Node.active.find_by(code:)
+      raise TaxonomyError.new("taxonomyCode is unknown", status: 404) unless node
+
+      node
+    end
+
     def create_or_update_assignment!(node:, entity:, role:)
       assignment = Assignment.find_or_initialize_by(node:, entity:, role:)
       assignment.position ||= 0
@@ -323,6 +364,14 @@ module AbyzTaxonomy
       Date.iso8601(value.to_s)
     rescue ArgumentError
       raise TaxonomyError, "#{field} must use YYYY-MM-DD"
+    end
+
+    def payload_has_key?(payload, *keys)
+      hash = payload.respond_to?(:to_unsafe_h) ? payload.to_unsafe_h : payload.to_h
+
+      keys.any? do |key|
+        hash.key?(key) || hash.key?(key.to_sym)
+      end
     end
 
     def serialize_project_titles

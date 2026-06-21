@@ -87,6 +87,44 @@
     return state.tree && state.tree.wpSections ? state.tree.wpSections : [];
   }
 
+  function taxonomyTypeLabel(node) {
+    var taxonomyType = node && node.rules && node.rules.taxonomyType;
+    if (taxonomyType === "portfolio") {
+      return "포트폴리오";
+    }
+    if (taxonomyType === "program") {
+      return "프로그램";
+    }
+    if (node && node.nodeKind === "wp_section") {
+      return "섹션";
+    }
+    return "타이틀";
+  }
+
+  function taxonomyNodeByCode(code) {
+    var match = null;
+    projectTitleEntries().some(function (entry) {
+      if (entry.title.code === code) {
+        match = entry.title;
+        return true;
+      }
+      return false;
+    });
+    if (match) {
+      return match;
+    }
+
+    wpSectionEntries().some(function (entry) {
+      if (entry.section.code === code) {
+        match = entry.section;
+        return true;
+      }
+      return false;
+    });
+
+    return match;
+  }
+
   function closeCreateMenus() {
     var menu = document.getElementById("abyz-taxonomy-wp-create-menu");
     if (menu) {
@@ -224,6 +262,13 @@
     return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
   }
 
+  function taxonomyRowActionButtons(code) {
+    return [
+      '<button type="button" class="button" data-abyz-action="edit-node" data-code="' + escapeHtml(code) + '">편집</button>',
+      '<button type="button" class="button -danger" data-abyz-action="delete-node" data-code="' + escapeHtml(code) + '">삭제</button>'
+    ].join("");
+  }
+
   function projectIdentifierFromRow(row) {
     var links = row.querySelectorAll('a[href*="/projects/"]');
     for (var i = 0; i < links.length; i += 1) {
@@ -264,7 +309,7 @@
     });
 
     var titles = projectTitleEntries().map(function (entry) {
-      return entry.title.code + ":" + (entry.projects || []).map(function (project) {
+      return entry.title.code + ":" + entry.title.name + ":" + taxonomyTypeLabel(entry.title) + ":" + (entry.projects || []).map(function (project) {
         return project.identifier;
       }).join(",");
     });
@@ -287,12 +332,127 @@
       '<span class="abyz-taxonomy-row-meta">project_title, 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
+      taxonomyRowActionButtons(title.code),
       '<button type="button" class="button" data-abyz-action="project-under-title" data-code="' + escapeHtml(title.code) + '">프로젝트 추가</button>',
       '</div>',
       '</div>',
       '</td>'
     ].join("");
     return row;
+  }
+
+  function projectSelectList() {
+    return document.querySelector('#op-header-project-select-listbox[data-test-selector="op-header-project-select--list"], [data-test-selector="op-header-project-select--list"]');
+  }
+
+  function projectSelectItemMap(list) {
+    var map = {};
+    Array.prototype.forEach.call(list.querySelectorAll('li[data-test-selector="op-header-project-select--item"]'), function (item) {
+      if (item.classList.contains("abyz-taxonomy-project-select-title")) {
+        return;
+      }
+
+      var link = item.querySelector('a[href*="/projects/"]');
+      var identifier = link && projectIdentifierFromHref(link.getAttribute("href"));
+      if (identifier) {
+        map[identifier] = item;
+      }
+    });
+    return map;
+  }
+
+  function projectSelectSignature(list) {
+    var identifiers = [];
+    Array.prototype.forEach.call(list.querySelectorAll('li[data-test-selector="op-header-project-select--item"]'), function (item) {
+      if (item.classList.contains("abyz-taxonomy-project-select-title")) {
+        return;
+      }
+
+      var link = item.querySelector('a[href*="/projects/"]');
+      var identifier = link && projectIdentifierFromHref(link.getAttribute("href"));
+      if (identifier) {
+        identifiers.push(identifier);
+      }
+    });
+
+    var titles = projectTitleEntries().map(function (entry) {
+      return [entry.title.code, entry.title.name, taxonomyTypeLabel(entry.title), (entry.projects || []).map(function (project) {
+        return project.identifier;
+      }).join(",")].join(":");
+    });
+
+    return identifiers.join("|") + "::" + titles.join("|");
+  }
+
+  function buildProjectSelectTitleItem(entry) {
+    var title = entry.title;
+    var item = document.createElement("li");
+    item.className = "spot-list--item abyz-taxonomy-project-select-title";
+    item.setAttribute("role", "none");
+    item.setAttribute("data-test-selector", "op-header-project-select--item");
+    item.setAttribute("data-abyz-taxonomy-code", title.code);
+    item.innerHTML = [
+      '<div class="spot-list--item-action abyz-taxonomy-project-select-title-action">',
+      '<span class="abyz-taxonomy-project-select-title-label">' + escapeHtml(title.name) + '</span>',
+      '<span class="abyz-taxonomy-project-select-title-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님</span>',
+      '<span class="abyz-taxonomy-project-select-actions">',
+      '<button type="button" data-abyz-action="edit-node" data-code="' + escapeHtml(title.code) + '">편집</button>',
+      '<button type="button" data-abyz-action="delete-node" data-code="' + escapeHtml(title.code) + '">삭제</button>',
+      '</span>',
+      '</div>'
+    ].join("");
+    return item;
+  }
+
+  function renderProjectSelectTaxonomyRows() {
+    var list = projectSelectList();
+    if (!list || !state.tree) {
+      return;
+    }
+
+    var signature = projectSelectSignature(list);
+    if (list.dataset.abyzTaxonomySignature === signature) {
+      return;
+    }
+
+    Array.prototype.forEach.call(list.querySelectorAll(".abyz-taxonomy-project-select-title"), function (item) {
+      item.remove();
+    });
+
+    var realItems = Array.prototype.slice.call(list.querySelectorAll('li[data-test-selector="op-header-project-select--item"]'));
+    var itemsByIdentifier = projectSelectItemMap(list);
+    var assignedItems = [];
+    var orderedItems = [];
+
+    realItems.forEach(function (item) {
+      item.classList.remove("abyz-taxonomy-project-select-child");
+      item.removeAttribute("data-abyz-display-parent");
+    });
+
+    projectTitleEntries().forEach(function (entry) {
+      orderedItems.push(buildProjectSelectTitleItem(entry));
+      (entry.projects || []).forEach(function (project) {
+        var item = itemsByIdentifier[project.identifier];
+        if (item) {
+          item.classList.add("abyz-taxonomy-project-select-child");
+          item.setAttribute("data-abyz-display-parent", entry.title.code);
+          assignedItems.push(item);
+          orderedItems.push(item);
+        }
+      });
+    });
+
+    realItems.forEach(function (item) {
+      if (assignedItems.indexOf(item) === -1) {
+        orderedItems.push(item);
+      }
+    });
+
+    orderedItems.forEach(function (item) {
+      list.appendChild(item);
+    });
+
+    list.dataset.abyzTaxonomySignature = signature;
   }
 
   function renderProjectTitleRows() {
@@ -386,7 +546,7 @@
         return entry.project && entry.project.identifier === projectIdentifier;
       })
       .map(function (entry) {
-        return entry.section.code + ":" + (entry.workPackages || []).map(function (wp) {
+        return entry.section.code + ":" + entry.section.name + ":" + (entry.workPackages || []).map(function (wp) {
           return wp.id;
         }).join(",");
       });
@@ -409,6 +569,7 @@
       '<span class="abyz-taxonomy-row-meta">wp_section, 실제 WP 아님, ' + count + '개 WP</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
+      taxonomyRowActionButtons(section.code),
       '<button type="button" class="button" data-abyz-action="wp-under-section" data-code="' + escapeHtml(section.code) + '">WP 추가</button>',
       '</div>',
       '</div>',
@@ -557,11 +718,13 @@
     context = context || {};
     closeCreateMenus();
     var projectIdentifier = currentProjectIdentifier();
+    var editNode = context.node;
     var heading = {
       projectTitle: context.taxonomyType === "program" ? "프로그램 추가" : (context.taxonomyType === "portfolio" ? "포트폴리오 추가" : "타이틀 추가"),
       project: "타이틀 아래 프로젝트 추가",
       wpSection: "섹션 추가",
-      workPackage: "섹션 아래 WP 추가"
+      workPackage: "섹션 아래 WP 추가",
+      taxonomyNode: editNode ? taxonomyTypeLabel(editNode) + " 편집" : "구분 인자 편집"
     }[kind];
     var body = "";
 
@@ -592,6 +755,25 @@
         '<label>완료일<input name="dueDate" type="date"></label>',
         '<label>설명<textarea name="description" rows="3"></textarea></label>'
       ].join("");
+    } else if (kind === "taxonomyNode" && editNode) {
+      var taxonomyType = editNode.rules && editNode.rules.taxonomyType ? editNode.rules.taxonomyType : "title";
+      var typeControl = "";
+      if (editNode.nodeKind === "project_title" || editNode.nodeKind === "title") {
+        typeControl = [
+          '<label>구분 유형<select name="taxonomyType">',
+          '<option value="portfolio"' + (taxonomyType === "portfolio" ? " selected" : "") + '>포트폴리오</option>',
+          '<option value="program"' + (taxonomyType === "program" ? " selected" : "") + '>프로그램</option>',
+          '<option value="title"' + (taxonomyType === "title" ? " selected" : "") + '>타이틀</option>',
+          '</select></label>'
+        ].join("");
+      }
+
+      body = [
+        typeControl,
+        '<label>이름<input name="name" required autocomplete="off" value="' + escapeHtml(editNode.name) + '"></label>',
+        '<label>코드<input name="code" required autocomplete="off" value="' + escapeHtml(editNode.code) + '"></label>',
+        '<label>설명<textarea name="description" rows="3">' + escapeHtml(editNode.description || "") + '</textarea></label>'
+      ].join("");
     }
 
     var root = document.createElement("div");
@@ -600,7 +782,7 @@
     root.innerHTML = [
       '<section class="abyz-taxonomy-modal" role="dialog" aria-modal="true" aria-labelledby="abyz-taxonomy-modal-title">',
       '<header><h2 id="abyz-taxonomy-modal-title">' + heading + '</h2><button type="button" class="button" data-abyz-action="close-modal">닫기</button></header>',
-      '<form class="abyz-taxonomy-form" data-kind="' + kind + '">',
+      '<form class="abyz-taxonomy-form" data-kind="' + kind + '"' + (editNode ? ' data-code="' + escapeHtml(editNode.code) + '"' : "") + '>',
       body,
       '<div class="abyz-taxonomy-error" data-abyz-error></div>',
       '</form>',
@@ -637,6 +819,18 @@
     return data;
   }
 
+  function refreshTaxonomyViews(kind) {
+    state.tree = null;
+    return loadTree().then(function () {
+      renderProjectTitleRows();
+      renderProjectSelectTaxonomyRows();
+      renderWpSectionRows();
+      if (kind === "project" || kind === "workPackage") {
+        window.location.reload();
+      }
+    });
+  }
+
   function submitModal() {
     var form = document.querySelector("#abyz-taxonomy-modal-root form");
     var error = document.querySelector("#abyz-taxonomy-modal-root [data-abyz-error]");
@@ -655,28 +849,48 @@
       wpSection: "/abyz_taxonomy/ui/wp_sections",
       workPackage: "/abyz_taxonomy/ui/work_packages"
     };
+    var endpoint = endpoints[kind];
+    var method = "POST";
+
+    if (kind === "taxonomyNode") {
+      endpoint = "/abyz_taxonomy/ui/nodes/" + encodeURIComponent(form.dataset.code || "");
+      method = "PATCH";
+    }
 
     if (error) {
       error.textContent = "";
     }
 
-    fetchJson(endpoints[kind], {
-      method: "POST",
+    fetchJson(endpoint, {
+      method: method,
       body: JSON.stringify(formPayload(form))
     }).then(function () {
       closeModal();
-      state.tree = null;
-      return loadTree();
-    }).then(function () {
-      renderProjectTitleRows();
-      renderWpSectionRows();
-      if (kind === "project" || kind === "workPackage") {
-        window.location.reload();
-      }
+      return refreshTaxonomyViews(kind);
     }).catch(function (err) {
       if (error) {
         error.textContent = err.message;
       }
+    });
+  }
+
+  function deleteTaxonomyNode(code) {
+    var node = taxonomyNodeByCode(code);
+    if (!node) {
+      return;
+    }
+
+    var confirmed = window.confirm(taxonomyTypeLabel(node) + " '" + node.name + "'을(를) 삭제합니까?\n실제 Project/WP는 삭제되지 않고 분류 연결만 제거됩니다.");
+    if (!confirmed) {
+      return;
+    }
+
+    fetchJson("/abyz_taxonomy/ui/nodes/" + encodeURIComponent(code), {
+      method: "DELETE"
+    }).then(function () {
+      return refreshTaxonomyViews("taxonomyNode");
+    }).catch(function (err) {
+      window.alert(err.message);
     });
   }
 
@@ -713,6 +927,12 @@
     } else if (action === "wp-under-section") {
       event.preventDefault();
       openModal("workPackage", { code: trigger.getAttribute("data-code") });
+    } else if (action === "edit-node") {
+      event.preventDefault();
+      openModal("taxonomyNode", { node: taxonomyNodeByCode(trigger.getAttribute("data-code")) });
+    } else if (action === "delete-node") {
+      event.preventDefault();
+      deleteTaxonomyNode(trigger.getAttribute("data-code"));
     }
   }
 
@@ -746,6 +966,7 @@
     loadTree().then(function () {
       enhanceProjectCreateMenu();
       renderProjectTitleRows();
+      renderProjectSelectTaxonomyRows();
       renderWpSectionRows();
     }).catch(function () {
       // Non-admin users should keep the normal OpenProject UI.

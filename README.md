@@ -33,6 +33,8 @@ POST /abyz_taxonomy/ui/project_titles
 POST /abyz_taxonomy/ui/projects
 POST /abyz_taxonomy/ui/wp_sections
 POST /abyz_taxonomy/ui/work_packages
+PATCH  /abyz_taxonomy/ui/nodes/:code
+DELETE /abyz_taxonomy/ui/nodes/:code
 ```
 
 All endpoints require an authenticated admin user.
@@ -46,7 +48,9 @@ Project list:
 3. Use `포트폴리오 추가`, `프로그램 추가`, or `타이틀 추가` to create a display-only `project_title`.
 4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
 5. The created Project is moved directly under its display-only title row in the active Project list.
-6. The title row has no Project link/status/date/progress of its own.
+6. The top-left project selector also shows the display-only portfolio/program/title row and the linked Project directly below it.
+7. Use `편집`/`삭제` on the display-only row to change or remove the taxonomy node. Delete removes taxonomy rows/assignments only; it does not delete the real Project.
+8. The title row has no Project link/status/date/progress of its own.
 
 Work package table:
 
@@ -56,7 +60,8 @@ Work package table:
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
 5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
 6. Dated WorkPackages render their Gantt bar on the WorkPackage row, with a matching timeline spacer for the section row.
-7. The section row has no WorkPackage id/status/assignee/dates of its own.
+7. Use `편집`/`삭제` on the display-only section row to change or remove the taxonomy node. Delete removes taxonomy rows/assignments only; it does not delete the real WorkPackage.
+8. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
 
@@ -79,6 +84,7 @@ Supported flow:
 3. Create a WP section inside a Project.
 4. Create or assign WorkPackages under that section.
 5. Read `/api/v3/abyz_taxonomy/tree` to see the grouped title/project/section/WP view.
+6. Edit/delete display-only titles and sections from the injected UI rows when the grouping needs to change.
 
 Example:
 
@@ -125,8 +131,9 @@ OP_E2E_API_TOKEN=... \
 node scripts/e2e/op_taxonomy_ui_e2e.js
 ```
 
-The test creates a project title, Project, WP section, and dated WorkPackage
-through the browser UI, verifies the app-header global quick-add menu,
+The test creates, edits, and deletes display-only taxonomy nodes, creates a
+Project, WP section, and dated WorkPackage through the browser UI, verifies the
+app-header global quick-add menu, top-left project selector taxonomy rows,
 Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
 validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.

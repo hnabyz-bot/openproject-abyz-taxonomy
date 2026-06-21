@@ -63,10 +63,37 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
+    def update_node
+      node = TaxonomyService.update_node!(params[:code], taxonomy_params)
+
+      render json: {
+        _type: "AbyzTaxonomyNode",
+        node: TaxonomyService.serialize_node(node)
+      }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    rescue ActiveRecord::RecordInvalid => e
+      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+    end
+
+    def delete_node
+      node = TaxonomyService.delete_node!(params[:code])
+
+      render json: {
+        _type: "AbyzTaxonomyDeletedNode",
+        code: node.code
+      }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    rescue ActiveRecord::RecordNotDestroyed => e
+      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+    end
+
     private
 
     def taxonomy_params
-      params.except(:controller, :action, :ui, :format)
+      raw_params = request.request_parameters.presence || params.to_unsafe_h
+      raw_params.except("controller", "action", "ui", "format")
     end
 
     def render_taxonomy_error(error)

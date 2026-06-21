@@ -113,11 +113,15 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
   page.on("pageerror", (err) => consoleMessages.push(`pageerror: ${err.message}`));
 
   const titleName = `E2E 타이틀 ${stamp}`;
-  const titleCode = `project.e2e.${stamp}`;
+  const editedTitleName = `E2E 타이틀 편집 ${stamp}`;
+  const deleteTitleName = `E2E delete fixture ${stamp}`;
+  const titleCode = `project.e2e-${stamp}`;
+  const deleteTitleCode = `project.e2e-delete-fixture-${stamp}`;
   const projectName = `E2E 프로젝트 ${stamp}`;
   const projectIdentifier = `e2e-taxonomy-${stamp.toLowerCase()}`;
   const sectionName = `E2E 섹션 ${stamp}`;
-  const sectionCode = `wp.${projectIdentifier}.e2e.${stamp.toLowerCase()}`;
+  const editedSectionName = `E2E 섹션 편집 ${stamp}`;
+  const sectionCode = `wp.${projectIdentifier}.e2e-${stamp.toLowerCase()}`;
   const wpSubject = `E2E WP ${stamp}`;
   const wpStartDate = "2026-06-22";
   const wpDueDate = "2026-06-26";
@@ -126,8 +130,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     baseUrl,
     stamp,
     titleCode,
+    editedTitleName,
     projectIdentifier,
     sectionCode,
+    editedSectionName,
     workPackageSubject: wpSubject,
     workPackageStartDate: wpStartDate,
     workPackageDueDate: wpDueDate,
@@ -166,13 +172,48 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(titleName);
     await page.locator('#abyz-taxonomy-modal-root input[name="code"]').fill(titleCode);
     await clickAndSave(page);
-    await waitForText(page, titleName);
+    await page.locator(`[data-abyz-taxonomy-code="${titleCode}"]`).waitFor({ state: "visible", timeout: 90000 });
     await screenshot(page, "02-project-title-row");
     evidence.screenshots.push("02-project-title-row.png");
 
+    await page.locator(`[data-abyz-taxonomy-code="${titleCode}"] [data-abyz-action="edit-node"]`).first().click();
+    await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(editedTitleName);
+    await clickAndSave(page);
+    await waitForText(page, editedTitleName);
+    await screenshot(page, "02b-project-title-edited");
+    evidence.screenshots.push("02b-project-title-edited.png");
+
+    await page.evaluate(async ({ deleteTitleName, deleteTitleCode }) => {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+      const response = await fetch("/abyz_taxonomy/ui/project_titles", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf || ""
+        },
+        body: JSON.stringify({
+          name: deleteTitleName,
+          code: deleteTitleCode,
+          taxonomyType: "title"
+        })
+      });
+      if (!response.ok) {
+        throw new Error(`delete fixture title create failed: ${response.status}`);
+      }
+    }, { deleteTitleName, deleteTitleCode });
+    await page.goto(url("/projects"), { waitUntil: "domcontentloaded" });
+    await suppressOnboarding(page);
+    await waitForText(page, deleteTitleName);
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.locator(`[data-abyz-taxonomy-code="${deleteTitleCode}"] [data-abyz-action="delete-node"]`).first().click();
+    await page.waitForFunction((code) => !document.querySelector(`[data-abyz-taxonomy-code="${code}"]`), deleteTitleCode, { timeout: 90000 });
+    evidence.deletedProjectTitle = true;
+
     await page
       .locator('[data-test-selector="abyz-taxonomy-project-title-row"]')
-      .filter({ hasText: titleName })
+      .filter({ hasText: editedTitleName })
       .locator('[data-abyz-action="project-under-title"]')
       .click();
     await page.locator('#abyz-taxonomy-modal-root select[name="titleCode"]').selectOption(titleCode);
@@ -182,7 +223,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page.waitForTimeout(3000);
     await page.goto(url("/projects"), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
-    await waitForText(page, titleName);
+    await waitForText(page, editedTitleName);
     await waitForText(page, projectName);
     await page.locator(`[data-abyz-taxonomy-code="${titleCode}"]`).scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
@@ -226,6 +267,44 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
     await page.locator(".wp-create-button").waitFor({ state: "visible", timeout: 120000 });
+    await page.locator('[data-test-selector="op-projects-menu"]').click();
+    await page
+      .locator(`[data-test-selector="op-header-project-select--list"] .abyz-taxonomy-project-select-title[data-abyz-taxonomy-code="${titleCode}"]`)
+      .waitFor({ state: "visible", timeout: 90000 });
+    await screenshot(page, "03b-project-selector-taxonomy");
+    evidence.screenshots.push("03b-project-selector-taxonomy.png");
+    evidence.projectSelectorOrder = await page.evaluate(({ titleCode, projectIdentifier }) => {
+      const identifierFromHref = (href) => {
+        const match = String(href || "").match(/\/projects\/([^/?#]+)\/?(?:[?#].*)?$/);
+        return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
+      };
+      const rows = Array.from(document.querySelectorAll('[data-test-selector="op-header-project-select--list"] li[data-test-selector="op-header-project-select--item"]')).map((row, index) => {
+        const link = row.querySelector('a[href*="/projects/"]');
+        return {
+          index,
+          taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
+          projectIdentifier: link && identifierFromHref(link.getAttribute("href")),
+          hasEdit: !!row.querySelector('[data-abyz-action="edit-node"]'),
+          hasDelete: !!row.querySelector('[data-abyz-action="delete-node"]'),
+          text: row.innerText.trim().replace(/\s+/g, " ")
+        };
+      });
+      const titleIndex = rows.findIndex((row) => row.taxonomyCode === titleCode);
+      const projectIndex = rows.findIndex((row) => row.projectIdentifier === projectIdentifier);
+      return {
+        titleIndex,
+        projectIndex,
+        adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
+        titleHasEdit: rows[titleIndex] && rows[titleIndex].hasEdit,
+        titleHasDelete: rows[titleIndex] && rows[titleIndex].hasDelete,
+        rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
+      };
+    }, { titleCode, projectIdentifier });
+    if (!evidence.projectSelectorOrder.adjacent || !evidence.projectSelectorOrder.titleHasEdit || !evidence.projectSelectorOrder.titleHasDelete) {
+      throw new Error(`Project selector taxonomy assertion failed: ${JSON.stringify(evidence.projectSelectorOrder)}`);
+    }
+    await page.keyboard.press("Escape").catch(() => {});
+    await suppressOnboarding(page);
     await openGlobalQuickAddMenu(page);
     await page
       .locator('#op-app-header--quick-add-menu-list [data-abyz-menu-scope="global"][data-abyz-action="wp-section"]')
@@ -253,6 +332,13 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await screenshot(page, "05-wp-section-row");
     evidence.screenshots.push("05-wp-section-row.png");
 
+    await page.locator(`[data-abyz-taxonomy-code="${sectionCode}"] [data-abyz-action="edit-node"]`).first().click();
+    await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(editedSectionName);
+    await clickAndSave(page);
+    await waitForText(page, editedSectionName);
+    await screenshot(page, "05b-wp-section-edited");
+    evidence.screenshots.push("05b-wp-section-edited.png");
+
     await openWorkPackageCreateMenu(page);
     await page.locator('#abyz-taxonomy-wp-create-menu [data-abyz-action="wp-under-section"]').click();
     await page.locator('#abyz-taxonomy-modal-root select[name="sectionCode"]').selectOption(sectionCode);
@@ -263,13 +349,13 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await page.waitForTimeout(5000);
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
-    await waitForText(page, sectionName);
+    await waitForText(page, editedSectionName);
     await waitForText(page, wpSubject);
     await screenshot(page, "06-wp-under-section");
     evidence.screenshots.push("06-wp-under-section.png");
     await page.goto(url(`/projects/${projectIdentifier}/gantt`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
-    await waitForText(page, sectionName);
+    await waitForText(page, editedSectionName);
     await waitForText(page, wpSubject);
     await screenshot(page, "07-gantt-under-section");
     evidence.screenshots.push("07-gantt-under-section.png");
@@ -349,9 +435,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       return response.json();
     });
     evidence.treeAssertion = {
-      hasTitle: tree.projectTitles.some((entry) => entry.title.code === titleCode),
+      hasTitle: tree.projectTitles.some((entry) => entry.title.code === titleCode && entry.title.name === editedTitleName),
+      deletedTitleAbsent: !tree.projectTitles.some((entry) => entry.title.code === deleteTitleCode),
       hasProject: tree.projectTitles.some((entry) => entry.projects.some((project) => project.identifier === projectIdentifier)),
-      hasSection: tree.wpSections.some((entry) => entry.section.code === sectionCode),
+      hasSection: tree.wpSections.some((entry) => entry.section.code === sectionCode && entry.section.name === editedSectionName),
       hasWorkPackage: tree.wpSections.some((entry) => entry.workPackages.some((wp) => wp.subject === wpSubject))
     };
 

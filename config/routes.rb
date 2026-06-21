@@ -7,5 +7,7 @@ Rails.application.routes.draw do
     post "ui/projects", to: "ui#create_project", defaults: { format: :json }
     post "ui/wp_sections", to: "ui#create_wp_section", defaults: { format: :json }
     post "ui/work_packages", to: "ui#create_work_package", defaults: { format: :json }
+    patch "ui/nodes/:code", to: "ui#update_node", constraints: { code: /[^\/]+/ }, defaults: { format: :json }
+    delete "ui/nodes/:code", to: "ui#delete_node", constraints: { code: /[^\/]+/ }, defaults: { format: :json }
   end
 end

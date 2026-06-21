@@ -84,6 +84,53 @@
   padding-left: 2rem;
 }
 
+.abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
+  align-items: center;
+  background: #f3f5f7;
+  border-bottom: 1px solid #d8dee6;
+  border-top: 1px solid #d8dee6;
+  cursor: default;
+  display: grid;
+  gap: 0.15rem 0.5rem;
+  grid-template-columns: 1fr auto;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.abyz-taxonomy-project-select-title-label {
+  color: #1f2328;
+  font-weight: 700;
+}
+
+.abyz-taxonomy-project-select-title-meta {
+  color: var(--fgColor-muted, #57606a);
+  font-size: 0.75rem;
+  grid-column: 1 / 2;
+}
+
+.abyz-taxonomy-project-select-actions {
+  display: inline-flex;
+  gap: 0.25rem;
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+}
+
+.abyz-taxonomy-project-select-actions button {
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  background: #fff;
+  color: #24292f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  min-height: 1.5rem;
+  padding: 0 0.4rem;
+}
+
+.abyz-taxonomy-project-select-child .spot-list--item-action {
+  padding-left: 1.75rem;
+}
+
 .abyz-taxonomy-gantt-section-row {
   align-items: center;
   background: #f3f5f7;
