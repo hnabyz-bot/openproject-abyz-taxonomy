@@ -53,6 +53,12 @@ Work package table:
 3. Use `WP 추가` or `섹션 아래 WP` to create a real WorkPackage under the section.
 4. The section row has no WorkPackage id/status/assignee/dates of its own.
 
+Native creation guard:
+
+- New WorkPackages with subjects starting with `[ ... ]` are rejected.
+- New Projects with names starting with `[ ... ]` are rejected.
+- Use the taxonomy UI/API to create display-only title/section rows instead.
+
 ## Usage Model
 
 The title and section concepts do not replace OpenProject Projects or

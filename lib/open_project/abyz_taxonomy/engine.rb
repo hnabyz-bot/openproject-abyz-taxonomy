@@ -27,6 +27,9 @@ module OpenProject
 
       config.to_prepare do
         require "open_project/abyz_taxonomy/hooks"
+        require "open_project/abyz_taxonomy/contract_patches"
+
+        ::OpenProject::AbyzTaxonomy::ContractPatches.apply!
       end
     end
   end
