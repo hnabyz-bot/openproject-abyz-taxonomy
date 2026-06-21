@@ -8,7 +8,7 @@ namespace :abyz_taxonomy do
 
       root = AbyzTaxonomy::Node.find_or_create_by!(code: "ra") do |node|
         node.scope_type = "global"
-        node.node_kind = "category"
+        node.node_kind = "wp_category"
         node.name = "RA"
         node.position = 100
       end
@@ -73,4 +73,3 @@ namespace :abyz_taxonomy do
     end
   end
 end
-

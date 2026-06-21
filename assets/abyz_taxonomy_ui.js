@@ -186,6 +186,22 @@
     return;
   }
 
+  function projectIdentifierFromHref(href) {
+    var match = String(href || "").match(/\/projects\/([^/?#]+)\/?(?:[?#].*)?$/);
+    return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
+  }
+
+  function projectIdentifierFromRow(row) {
+    var links = row.querySelectorAll('a[href*="/projects/"]');
+    for (var i = 0; i < links.length; i += 1) {
+      var identifier = projectIdentifierFromHref(links[i].getAttribute("href"));
+      if (identifier) {
+        return identifier;
+      }
+    }
+    return null;
+  }
+
   function projectRowMap(tbody) {
     var map = {};
     Array.prototype.forEach.call(tbody.querySelectorAll("tr"), function (row) {
@@ -193,14 +209,9 @@
         return;
       }
 
-      var link = row.querySelector('a[href*="/projects/"]');
-      if (!link) {
-        return;
-      }
-
-      var match = link.getAttribute("href").match(/\/projects\/([^/?#]+)/);
-      if (match) {
-        map[decodeURIComponent(match[1])] = row;
+      var identifier = projectIdentifierFromRow(row);
+      if (identifier) {
+        map[identifier] = row;
       }
     });
     return map;
@@ -213,10 +224,9 @@
         return;
       }
 
-      var link = row.querySelector('a[href*="/projects/"]');
-      var match = link && link.getAttribute("href").match(/\/projects\/([^/?#]+)/);
-      if (match) {
-        identifiers.push(decodeURIComponent(match[1]));
+      var identifier = projectIdentifierFromRow(row);
+      if (identifier) {
+        identifiers.push(identifier);
       }
     });
 
@@ -268,9 +278,11 @@
       row.remove();
     });
 
-    var firstRow = tbody.querySelector("tr");
+    var realRows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
     var rowsByIdentifier = projectRowMap(tbody);
     var colspan = tableColspan(table, 4);
+    var orderedRows = [];
+    var assignedRows = [];
 
     projectTitleEntries().forEach(function (entry) {
       var row = buildProjectTitleRow(entry, colspan);
@@ -278,16 +290,25 @@
         return rowsByIdentifier[project.identifier];
       }).filter(Boolean);
 
-      if (projectRows.length) {
-        tbody.insertBefore(row, projectRows[0]);
-        projectRows.forEach(function (projectRow) {
-          tbody.insertBefore(projectRow, row.nextSibling);
-        });
-      } else if (firstRow) {
-        tbody.insertBefore(row, firstRow);
-      } else {
-        tbody.appendChild(row);
+      orderedRows.push(row);
+      projectRows.forEach(function (projectRow) {
+        projectRow.classList.add("abyz-taxonomy-project-child-row");
+        projectRow.setAttribute("data-abyz-display-parent", entry.title.code);
+        assignedRows.push(projectRow);
+        orderedRows.push(projectRow);
+      });
+    });
+
+    realRows.forEach(function (row) {
+      if (assignedRows.indexOf(row) === -1) {
+        row.classList.remove("abyz-taxonomy-project-child-row");
+        row.removeAttribute("data-abyz-display-parent");
+        orderedRows.push(row);
       }
+    });
+
+    orderedRows.forEach(function (row) {
+      tbody.appendChild(row);
     });
 
     table.dataset.abyzTaxonomySignature = signature;

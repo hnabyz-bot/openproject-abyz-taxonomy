@@ -131,7 +131,7 @@ module API
           end
 
           post :validate do
-            result = ::AbyzTaxonomy::TaxonomyService.validate(params.to_h)
+            result = ::AbyzTaxonomy::TaxonomyService.validate(request_payload)
 
             status(result[:valid] ? 200 : 422)
             result

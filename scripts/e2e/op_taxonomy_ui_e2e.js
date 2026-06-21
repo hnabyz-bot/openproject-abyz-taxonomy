@@ -5,11 +5,16 @@ const { chromium } = require("playwright");
 const baseUrl = process.env.OP_BASE_URL || "http://localhost:8087";
 const username = process.env.OP_E2E_USER || "taxonomy.e2e";
 const password = process.env.OP_E2E_PASSWORD;
+const apiToken = process.env.OP_E2E_API_TOKEN;
 const stamp = process.env.E2E_STAMP || new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
 const resultDir = process.env.OP_E2E_RESULT_DIR || path.join("test-results", "op-taxonomy", stamp);
 
 if (!password) {
   throw new Error("OP_E2E_PASSWORD is required");
+}
+
+if (!apiToken) {
+  throw new Error("OP_E2E_API_TOKEN is required");
 }
 
 fs.mkdirSync(resultDir, { recursive: true });
@@ -141,6 +146,40 @@ async function openWorkPackageCreateMenu(page) {
     await waitForText(page, projectName);
     await screenshot(page, "03-project-under-title");
     evidence.screenshots.push("03-project-under-title.png");
+    evidence.projectListOrder = await page.evaluate(({ titleCode, projectIdentifier }) => {
+      const projectIdentifierFromHref = (href) => {
+        const match = String(href || "").match(/\/projects\/([^/?#]+)\/?(?:[?#].*)?$/);
+        return match && match[1] !== "new" ? decodeURIComponent(match[1]) : null;
+      };
+      const projectIdentifierFromRow = (row) => {
+        const links = Array.from(row.querySelectorAll('a[href*="/projects/"]'));
+        for (const link of links) {
+          const identifier = projectIdentifierFromHref(link.getAttribute("href"));
+          if (identifier) return identifier;
+        }
+        return null;
+      };
+      const rows = Array.from(document.querySelectorAll("#project-table tbody tr")).map((row, index) => {
+        return {
+          index,
+          taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
+          projectIdentifier: projectIdentifierFromRow(row),
+          text: row.innerText.trim().replace(/\s+/g, " ")
+        };
+      });
+      const titleIndex = rows.findIndex((row) => row.taxonomyCode === titleCode);
+      const projectIndex = rows.findIndex((row) => row.projectIdentifier === projectIdentifier);
+      return {
+        titleIndex,
+        projectIndex,
+        adjacent: titleIndex >= 0 && projectIndex === titleIndex + 1,
+        rows: rows.slice(Math.max(0, titleIndex - 1), projectIndex + 2)
+      };
+    }, { titleCode, projectIdentifier });
+
+    if (!evidence.projectListOrder.adjacent) {
+      throw new Error(`Project title/project adjacency failed: ${JSON.stringify(evidence.projectListOrder)}`);
+    }
 
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
@@ -170,6 +209,34 @@ async function openWorkPackageCreateMenu(page) {
     await waitForText(page, wpSubject);
     await screenshot(page, "06-wp-under-section");
     evidence.screenshots.push("06-wp-under-section.png");
+    await page.goto(url(`/projects/${projectIdentifier}/gantt`), { waitUntil: "domcontentloaded" });
+    await suppressOnboarding(page);
+    await waitForText(page, sectionName);
+    await waitForText(page, wpSubject);
+    await screenshot(page, "07-gantt-under-section");
+    evidence.screenshots.push("07-gantt-under-section.png");
+    evidence.ganttOrder = await page.evaluate(({ sectionCode, wpSubject }) => {
+      const rows = Array.from(document.querySelectorAll("table.work-package-table tbody tr")).map((row, index) => {
+        return {
+          index,
+          taxonomyCode: row.getAttribute("data-abyz-taxonomy-code"),
+          workPackageId: row.getAttribute("data-work-package-id"),
+          text: row.innerText.trim().replace(/\s+/g, " ")
+        };
+      });
+      const sectionIndex = rows.findIndex((row) => row.taxonomyCode === sectionCode);
+      const workPackageIndex = rows.findIndex((row) => row.text.includes(wpSubject));
+      return {
+        sectionIndex,
+        workPackageIndex,
+        adjacent: sectionIndex >= 0 && workPackageIndex === sectionIndex + 1,
+        rows: rows.slice(Math.max(0, sectionIndex - 1), workPackageIndex + 2)
+      };
+    }, { sectionCode, wpSubject });
+
+    if (!evidence.ganttOrder.adjacent) {
+      throw new Error(`Gantt section/WP adjacency failed: ${JSON.stringify(evidence.ganttOrder)}`);
+    }
 
     const tree = await page.evaluate(async () => {
       const response = await fetch("/abyz_taxonomy/ui/tree", { credentials: "same-origin" });
@@ -184,6 +251,42 @@ async function openWorkPackageCreateMenu(page) {
 
     if (!Object.values(evidence.treeAssertion).every(Boolean)) {
       throw new Error(`Tree assertion failed: ${JSON.stringify(evidence.treeAssertion)}`);
+    }
+
+    evidence.validationApi = await page.evaluate(async ({ sectionCode, projectIdentifier, stamp, apiToken }) => {
+      const postValidate = async (payload) => {
+        const response = await fetch("/api/v3/abyz_taxonomy/validate", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Basic ${btoa(`apikey:${apiToken}`)}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload)
+        });
+        return {
+          status: response.status,
+          body: await response.json()
+        };
+      };
+
+      return {
+        validSection: await postValidate({ taxonomyCode: sectionCode, projectIdentifier }),
+        missingCode: await postValidate({ projectIdentifier }),
+        unknownCode: await postValidate({ taxonomyCode: `wp.unknown.${stamp}`, projectIdentifier })
+      };
+    }, { sectionCode, projectIdentifier, stamp, apiToken });
+
+    if (
+      evidence.validationApi.validSection.status !== 200 ||
+      evidence.validationApi.validSection.body.valid !== true ||
+      evidence.validationApi.missingCode.status !== 422 ||
+      evidence.validationApi.missingCode.body.valid !== false ||
+      evidence.validationApi.unknownCode.status !== 422 ||
+      evidence.validationApi.unknownCode.body.valid !== false
+    ) {
+      throw new Error(`Validation API assertion failed: ${JSON.stringify(evidence.validationApi)}`);
     }
 
     await context.tracing.stop({ path: path.join(resultDir, "trace.zip") });

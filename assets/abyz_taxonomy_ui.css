@@ -80,6 +80,10 @@
   padding: 0.65rem 0.75rem;
 }
 
+.abyz-taxonomy-project-child-row td:first-child {
+  padding-left: 2rem;
+}
+
 .abyz-taxonomy-row-inner {
   display: flex;
   align-items: center;

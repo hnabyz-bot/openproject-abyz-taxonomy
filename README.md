@@ -45,7 +45,8 @@ Project list:
 2. Open the top-right `+ 추가` menu.
 3. Use `포트폴리오 추가`, `프로그램 추가`, or `타이틀 추가` to create a display-only `project_title`.
 4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
-5. The title row has no Project link/status/date/progress of its own.
+5. The created Project is moved directly under its display-only title row in the active Project list.
+6. The title row has no Project link/status/date/progress of its own.
 
 Work package table:
 
@@ -53,7 +54,8 @@ Work package table:
 2. Open the top-right `만들기` menu.
 3. Use `섹션 추가` to create a display-only `wp_section`.
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
-5. The section row has no WorkPackage id/status/assignee/dates of its own.
+5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
+6. The section row has no WorkPackage id/status/assignee/dates of its own.
 
 Native creation guard:
 
@@ -118,9 +120,10 @@ NODE_PATH=/tmp/op-taxonomy-playwright-runner/node_modules \
 OP_BASE_URL=http://localhost:8087 \
 OP_E2E_USER=taxonomy.e2e \
 OP_E2E_PASSWORD=... \
+OP_E2E_API_TOKEN=... \
 node scripts/e2e/op_taxonomy_ui_e2e.js
 ```
 
 The test creates a project title, Project, WP section, and WorkPackage through
-the browser UI and writes screenshots plus `trace.zip` under
-`test-results/op-taxonomy/<timestamp>/`.
+the browser UI, verifies Project/WP/Gantt adjacency, checks the validation API,
+and writes screenshots plus `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.
