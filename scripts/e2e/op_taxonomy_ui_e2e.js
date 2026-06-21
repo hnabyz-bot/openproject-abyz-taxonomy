@@ -83,10 +83,14 @@ async function clickNodeMenuItem(page, text) {
   await page.locator('[data-test-selector="abyz-taxonomy-node-menu"]').getByText(text, { exact: true }).click();
 }
 
-async function updateNodeThroughSettings(page, code, name, taxonomyType) {
+async function updateNodeThroughSettings(page, evidence, code, name, taxonomyType, menuScreenshot, settingsScreenshot) {
   await openNodeMenu(page, code);
+  await screenshot(page, menuScreenshot);
+  evidence.screenshots.push(`${menuScreenshot}.png`);
   await clickNodeMenuItem(page, "타이틀 설정");
   await page.locator("#node_name").waitFor({ state: "visible", timeout: 90000 });
+  await screenshot(page, settingsScreenshot);
+  evidence.screenshots.push(`${settingsScreenshot}.png`);
   await page.locator("#node_name").fill(name);
   if (taxonomyType) {
     await page.locator("#node_taxonomy_type").selectOption(taxonomyType);
@@ -220,7 +224,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
       throw new Error(`Project-like row UX assertion failed: ${JSON.stringify(evidence.projectTitleRowUxBeforeEdit)}`);
     }
 
-    await updateNodeThroughSettings(page, titleCode, editedTitleName, "program");
+    await updateNodeThroughSettings(page, evidence, titleCode, editedTitleName, "program", "02c-project-title-row-menu", "02d-project-title-settings");
     await page.goto(url("/projects"), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
     await waitForText(page, editedTitleName);
@@ -436,8 +440,12 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     }
 
     await openNodeMenu(page, sectionCode);
+    await screenshot(page, "05c-wp-section-row-menu");
+    evidence.screenshots.push("05c-wp-section-row-menu.png");
     await clickNodeMenuItem(page, "자세히 보기");
     await page.locator("#node_name").waitFor({ state: "visible", timeout: 90000 });
+    await screenshot(page, "05d-wp-section-settings");
+    evidence.screenshots.push("05d-wp-section-settings.png");
     await page.locator("#node_name").fill(editedSectionName);
     await Promise.all([
       page.waitForLoadState("domcontentloaded"),
