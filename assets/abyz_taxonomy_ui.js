@@ -150,13 +150,45 @@
     }
 
     list.insertAdjacentHTML("afterbegin", [
-      actionListMenuItem("포트폴리오 추가", "project-title", { "data-taxonomy-type": "portfolio" }),
-      actionListMenuItem("프로그램 추가", "project-title", { "data-taxonomy-type": "program" }),
-      actionListMenuItem("타이틀 추가", "project-title", { "data-taxonomy-type": "title" }),
-      actionListMenuItem("타이틀 아래 프로젝트 추가", "project-under-title", {}),
+      actionListMenuItem("포트폴리오 추가", "project-title", { "data-taxonomy-type": "portfolio", "data-abyz-menu-scope": "project-list" }),
+      actionListMenuItem("프로그램 추가", "project-title", { "data-taxonomy-type": "program", "data-abyz-menu-scope": "project-list" }),
+      actionListMenuItem("타이틀 추가", "project-title", { "data-taxonomy-type": "title", "data-abyz-menu-scope": "project-list" }),
+      actionListMenuItem("타이틀 아래 프로젝트 추가", "project-under-title", { "data-abyz-menu-scope": "project-list" }),
       '<li data-abyz-taxonomy-menu-item role="separator" class="ActionList-sectionDivider"></li>'
     ].join(""));
     list.dataset.abyzTaxonomyEnhanced = "true";
+  }
+
+  function enhanceGlobalQuickAddMenu() {
+    var list = document.getElementById("op-app-header--quick-add-menu-list");
+    if (!list) {
+      return;
+    }
+
+    var projectIdentifier = currentProjectIdentifier() || "";
+    if (list.dataset.abyzTaxonomyEnhancedFor === projectIdentifier) {
+      return;
+    }
+
+    Array.prototype.forEach.call(list.querySelectorAll("[data-abyz-taxonomy-menu-item]"), function (item) {
+      item.remove();
+    });
+
+    var items = [
+      actionListMenuItem("포트폴리오 추가", "project-title", { "data-taxonomy-type": "portfolio", "data-abyz-menu-scope": "global" }),
+      actionListMenuItem("프로그램 추가", "project-title", { "data-taxonomy-type": "program", "data-abyz-menu-scope": "global" }),
+      actionListMenuItem("타이틀 추가", "project-title", { "data-taxonomy-type": "title", "data-abyz-menu-scope": "global" }),
+      actionListMenuItem("타이틀 아래 프로젝트 추가", "project-under-title", { "data-abyz-menu-scope": "global" })
+    ];
+
+    if (projectIdentifier) {
+      items.push(actionListMenuItem("섹션 추가", "wp-section", { "data-abyz-menu-scope": "global" }));
+      items.push(actionListMenuItem("섹션 아래 WP", "wp-under-section", { "data-abyz-menu-scope": "global" }));
+    }
+
+    items.push('<li data-abyz-taxonomy-menu-item role="separator" class="ActionList-sectionDivider"></li>');
+    list.insertAdjacentHTML("afterbegin", items.join(""));
+    list.dataset.abyzTaxonomyEnhancedFor = projectIdentifier;
   }
 
   function openWpCreateMenu(button) {
@@ -180,6 +212,7 @@
 
   function insertProjectActions() {
     enhanceProjectCreateMenu();
+    enhanceGlobalQuickAddMenu();
   }
 
   function insertWorkPackageActions() {
@@ -706,6 +739,7 @@
   }
 
   function refresh() {
+    enhanceGlobalQuickAddMenu();
     enhanceProjectCreateMenu();
     insertProjectActions();
     insertWorkPackageActions();

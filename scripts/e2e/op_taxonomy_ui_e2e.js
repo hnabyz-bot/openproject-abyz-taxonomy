@@ -51,9 +51,17 @@ async function clickAndSave(page) {
 
 async function openProjectCreateMenu(page) {
   await suppressOnboarding(page);
-  await page.locator('button[aria-label="추가"]').first().click();
+  await page.locator('.project-list-page button[aria-label="추가"]').first().click();
   await page
-    .locator('[role="menu"] [data-abyz-action="project-title"][data-taxonomy-type="title"]')
+    .locator('[data-abyz-menu-scope="project-list"][data-abyz-action="project-title"][data-taxonomy-type="title"]')
+    .waitFor({ state: "visible", timeout: 90000 });
+}
+
+async function openGlobalQuickAddMenu(page) {
+  await suppressOnboarding(page);
+  await page.locator("#op-app-header--quick-add-menu-button").click();
+  await page
+    .locator('#op-app-header--quick-add-menu-list [data-abyz-menu-scope="global"][data-abyz-action="project-title"][data-taxonomy-type="title"]')
     .waitFor({ state: "visible", timeout: 90000 });
 }
 
@@ -121,12 +129,17 @@ async function openWorkPackageCreateMenu(page) {
       throw new Error("Login did not produce an authenticated OpenProject session");
     }
     await page.locator(".project-list-page").waitFor({ state: "visible", timeout: 90000 });
+    await openGlobalQuickAddMenu(page);
+    await screenshot(page, "00-global-project-actions");
+    evidence.screenshots.push("00-global-project-actions.png");
+    await page.keyboard.press("Escape").catch(() => {});
+    await suppressOnboarding(page);
     await openProjectCreateMenu(page);
     await screenshot(page, "01-project-actions");
     evidence.screenshots.push("01-project-actions.png");
 
     await suppressOnboarding(page);
-    await page.locator('[role="menu"] [data-abyz-action="project-title"][data-taxonomy-type="title"]').click();
+    await page.locator('[data-abyz-menu-scope="project-list"][data-abyz-action="project-title"][data-taxonomy-type="title"]').click();
     await page.locator('#abyz-taxonomy-modal-root input[name="name"]').fill(titleName);
     await page.locator('#abyz-taxonomy-modal-root input[name="code"]').fill(titleCode);
     await clickAndSave(page);
@@ -190,6 +203,14 @@ async function openWorkPackageCreateMenu(page) {
     await page.goto(url(`/projects/${projectIdentifier}/work_packages`), { waitUntil: "domcontentloaded" });
     await suppressOnboarding(page);
     await page.locator(".wp-create-button").waitFor({ state: "visible", timeout: 120000 });
+    await openGlobalQuickAddMenu(page);
+    await page
+      .locator('#op-app-header--quick-add-menu-list [data-abyz-menu-scope="global"][data-abyz-action="wp-section"]')
+      .waitFor({ state: "visible", timeout: 90000 });
+    await screenshot(page, "03b-global-project-wp-actions");
+    evidence.screenshots.push("03b-global-project-wp-actions.png");
+    await page.keyboard.press("Escape").catch(() => {});
+    await suppressOnboarding(page);
     await openWorkPackageCreateMenu(page);
     await screenshot(page, "04-wp-actions");
     evidence.screenshots.push("04-wp-actions.png");

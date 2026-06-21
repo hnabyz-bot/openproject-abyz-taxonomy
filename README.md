@@ -42,7 +42,7 @@ All endpoints require an authenticated admin user.
 Project list:
 
 1. Open `/projects`.
-2. Open the top-right `+ 추가` menu.
+2. Open the app-header top-right global `+` menu, or the Project list `+ 추가` menu.
 3. Use `포트폴리오 추가`, `프로그램 추가`, or `타이틀 추가` to create a display-only `project_title`.
 4. Use `타이틀 아래 프로젝트 추가` from the same menu, or `프로젝트 추가` on the title row, to create a real OpenProject Project under it.
 5. The created Project is moved directly under its display-only title row in the active Project list.
@@ -51,7 +51,7 @@ Project list:
 Work package table:
 
 1. Open `/projects/:identifier/work_packages`.
-2. Open the top-right `만들기` menu.
+2. Open the app-header top-right global `+` menu, or the Work package `만들기` menu.
 3. Use `섹션 추가` to create a display-only `wp_section`.
 4. Use `섹션 아래 WP` from the same menu, or `WP 추가` on the section row, to create a real WorkPackage under the section.
 5. The created WorkPackage is moved directly under its display-only section row in both the WP table and Gantt table.
@@ -126,6 +126,7 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 ```
 
 The test creates a project title, Project, WP section, and dated WorkPackage
-through the browser UI, verifies Project/WP/Gantt adjacency and Gantt timeline
-row alignment, checks the validation API, and writes screenshots plus
+through the browser UI, verifies the app-header global quick-add menu,
+Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
+validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.
