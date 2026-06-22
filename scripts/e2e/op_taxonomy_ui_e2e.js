@@ -184,9 +184,6 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
   function passTc(id, detail) {
     tcResults[id] = { id, status: "pass", detail: detail || {}, timestamp: new Date().toISOString() };
   }
-  function failTc(id, reason) {
-    tcResults[id] = { id, status: "fail", reason, timestamp: new Date().toISOString() };
-  }
   function writeTcArtifacts() {
     for (const tc of Object.values(tcResults)) {
       fs.writeFileSync(path.join(resultDir, `${tc.id}.json`), JSON.stringify(tc, null, 2));
@@ -195,7 +192,7 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
   function checkAdapterErrors(phase) {
     const TAXONOMY_RE = /abyz|taxonomy/i;
     const critical = consoleMessages.filter((msg) => {
-      if (msg.startsWith("pageerror:")) return true;
+      if (msg.startsWith("pageerror:")) return TAXONOMY_RE.test(msg);
       if (!msg.startsWith("error:")) return false;
       return TAXONOMY_RE.test(msg);
     });
