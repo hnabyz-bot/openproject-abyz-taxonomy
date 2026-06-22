@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/hnabyz-bot/abyz-lab-pm"
   spec.license = "GPL-3.0-only"
 
-  spec.files = Dir["app/**/*", "config/**/*", "db/**/*", "lib/**/*", "README.md"]
+  spec.files = Dir["app/**/*", "assets/**/*", "config/**/*", "db/**/*", "lib/**/*", "README.md"]
   spec.require_paths = ["lib"]
 end
 

@@ -1,4 +1,5 @@
-FROM openproject/openproject:17.5.0
+ARG OP_VERSION=17.5.0
+FROM openproject/openproject:${OP_VERSION}
 
 COPY custom-openproject/Gemfile.plugins /app/Gemfile.plugins
 COPY app /app/plugins/openproject-abyz-taxonomy/app
