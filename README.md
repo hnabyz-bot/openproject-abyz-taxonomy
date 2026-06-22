@@ -14,6 +14,38 @@ The plugin injects browser UI into the OpenProject Project and Work Package
 screens through plugin assets. OpenProject core data remains native Project/WP
 records; display-only title/section rows live in `abyz_taxonomy_*` tables.
 
+## Architecture Contract
+
+This project is not a custom-field-only classification layer. The product
+contract requires title/section rows to appear inside the native OpenProject
+screens:
+
+- Project list: portfolio/program/title row + linked Projects directly below.
+- Project selector: portfolio/program/title row + linked Projects, without
+  management buttons.
+- Work package table: wp_section row + linked WorkPackages directly below.
+- Gantt/timeline: section spacer aligned with the linked WorkPackage row/bar.
+
+The maintainable structure is:
+
+```text
+Plugin core
+  DB tables, models, services, API, validation, rake tasks
+
+Versioned OP UI adapter
+  plugin assets, DOM selector contract, optional source patches, E2E assertions
+
+Release gates
+  base image checksum, required patch apply, selector smoke, browser E2E,
+  rollback rehearsal
+```
+
+OpenProject source patches are allowed only as versioned adapter patches. They
+must be declared in `patches/openproject/<op-version>/manifest.yml` with target
+checksums and must fail the build or E2E when incompatible. Replacing native
+screen rows with only custom fields, filters, grouping, or a separate plugin
+screen is a product failure, not a fallback.
+
 ## Current Development State
 
 As of 2026-06-21, the isolated development instance runs:
@@ -148,6 +180,32 @@ Build from the repository root:
 OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
 ```
 
+Build requirements:
+
+- `OP_VERSION` must select the actual `openproject/openproject:<version>` base
+  image.
+- The matching adapter manifest must exist under
+  `patches/openproject/<op-version>/manifest.yml`.
+- Required source patches must validate against files extracted from the base
+  image, not a missing local OpenProject source tree.
+- DOM selector smoke and native-screen E2E must pass before production use.
+
+Current release blockers from the 2026-06-22 implementation cross-check:
+
+- `custom-openproject/Dockerfile` is still hardcoded to
+  `openproject/openproject:17.5.0`.
+- `build.sh` reads the old `patches` manifest schema and skips patch checks
+  when the OpenProject source target is not present in the repository.
+- The current manifest uses `checksum`/`severity`, not the required
+  `target_sha256`/`required` adapter schema.
+- Plugin assets are deployed by Dockerfile COPY into
+  `/app/public/plugin_assets/openproject-abyz-taxonomy`; the gemspec does not
+  package `assets/**/*`.
+- UI/API endpoints are admin-only. Non-admin row visibility requires an
+  explicit permission model before production use.
+- The current E2E script collects console/page errors but does not fail on
+  taxonomy adapter errors or produce TC-005/050/051/052/090 release artifacts.
+
 Development boot from the repository root:
 
 ```bash
@@ -173,7 +231,7 @@ Project, WP section, and dated WorkPackage through the browser UI, verifies the
 app-header global quick-add menu, top-left project selector taxonomy rows
 without management buttons, Project/WP-like `...` row menus,
 portfolio/program/title labels, settings form editing, and node management API,
-Project/WP/Gantt adjacency and Gantt timeline row alignment, checks the
+Project list/Project selector/WP/Gantt adjacency and Gantt timeline row alignment, checks the
 validation API, and writes screenshots plus
 `trace.zip` under `test-results/op-taxonomy/<timestamp>/`.
 
