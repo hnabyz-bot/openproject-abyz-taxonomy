@@ -175,6 +175,35 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     consoleMessages
   };
 
+  // TC release artifacts
+  const tcResults = Object.fromEntries(
+    ["TC-005", "TC-050", "TC-051", "TC-052", "TC-090"].map((id) => [
+      id, { id, status: "pending", detail: null, timestamp: null }
+    ])
+  );
+  function passTc(id, detail) {
+    tcResults[id] = { id, status: "pass", detail: detail || {}, timestamp: new Date().toISOString() };
+  }
+  function failTc(id, reason) {
+    tcResults[id] = { id, status: "fail", reason, timestamp: new Date().toISOString() };
+  }
+  function writeTcArtifacts() {
+    for (const tc of Object.values(tcResults)) {
+      fs.writeFileSync(path.join(resultDir, `${tc.id}.json`), JSON.stringify(tc, null, 2));
+    }
+  }
+  function checkAdapterErrors(phase) {
+    const TAXONOMY_RE = /abyz|taxonomy/i;
+    const critical = consoleMessages.filter((msg) => {
+      if (msg.startsWith("pageerror:")) return true;
+      if (!msg.startsWith("error:")) return false;
+      return TAXONOMY_RE.test(msg);
+    });
+    if (critical.length > 0) {
+      throw new Error(`Taxonomy adapter errors detected at ${phase}:\n${critical.slice(0, 8).join("\n")}`);
+    }
+  }
+
   try {
     await page.goto(url("/login"), { waitUntil: "domcontentloaded" });
     await page.locator("#username").fill(username);
@@ -195,6 +224,8 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     await openGlobalQuickAddMenu(page);
     await screenshot(page, "00-global-project-actions");
     evidence.screenshots.push("00-global-project-actions.png");
+    checkAdapterErrors("TC-005 initial load");
+    passTc("TC-005", { baseUrl, adapterMenuVisible: true });
     await page.keyboard.press("Escape").catch(() => {});
     await suppressOnboarding(page);
     await openProjectCreateMenu(page);
@@ -455,6 +486,11 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     ) {
       throw new Error(`Project selector taxonomy assertion failed: ${JSON.stringify(evidence.projectSelectorOrder)}`);
     }
+    passTc("TC-050", {
+      projectListAdjacent: evidence.projectListOrder.adjacent,
+      selectorAdjacent: evidence.projectSelectorOrder.adjacent,
+      selectorNoButtons: !evidence.projectSelectorOrder.titleHasAnyButton
+    });
     await page.keyboard.press("Escape").catch(() => {});
     await suppressOnboarding(page);
     await openGlobalQuickAddMenu(page);
@@ -562,6 +598,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     if (!evidence.ganttOrder.adjacent) {
       throw new Error(`Gantt section/WP adjacency failed: ${JSON.stringify(evidence.ganttOrder)}`);
     }
+    passTc("TC-051", {
+      wpSectionUxOk: evidence.wpSectionRowUxBeforeEdit.hasContextMenuButton,
+      ganttAdjacent: evidence.ganttOrder.adjacent
+    });
 
     evidence.ganttTimelineAlignment = await page.evaluate(({ sectionCode, wpSubject }) => {
       const rows = Array.from(document.querySelectorAll("table.work-package-table tbody tr")).map((row, index) => {
@@ -610,6 +650,10 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     if (!evidence.ganttTimelineAlignment.aligned || !evidence.ganttTimelineAlignment.hasBar) {
       throw new Error(`Gantt timeline alignment failed: ${JSON.stringify(evidence.ganttTimelineAlignment)}`);
     }
+    passTc("TC-052", {
+      aligned: evidence.ganttTimelineAlignment.aligned,
+      hasBar: evidence.ganttTimelineAlignment.hasBar
+    });
 
     const tree = await page.evaluate(async () => {
       const response = await fetch("/abyz_taxonomy/ui/tree", { credentials: "same-origin" });
@@ -724,7 +768,15 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     ) {
       throw new Error(`Validation API assertion failed: ${JSON.stringify(evidence.validationApi)}`);
     }
+    checkAdapterErrors("TC-090 final");
+    passTc("TC-090", {
+      treeOk: Object.values(evidence.treeAssertion).every(Boolean),
+      nodeApiCreate: evidence.nodeManagementApi.create.status === 201,
+      validationOk: evidence.validationApi.validSection.status === 200
+    });
 
+    evidence.tcResults = tcResults;
+    writeTcArtifacts();
     await context.tracing.stop({ path: path.join(resultDir, "trace.zip") });
     fs.writeFileSync(path.join(resultDir, "result.json"), JSON.stringify(evidence, null, 2));
     await browser.close();
@@ -732,6 +784,8 @@ async function verifyNativeWorkPackageForm(page, projectIdentifier) {
     evidence.error = error.message;
     await screenshot(page, "failure").catch(() => {});
     await context.tracing.stop({ path: path.join(resultDir, "trace.zip") }).catch(() => {});
+    evidence.tcResults = tcResults;
+    writeTcArtifacts();
     fs.writeFileSync(path.join(resultDir, "result.json"), JSON.stringify(evidence, null, 2));
     await browser.close();
     throw error;
