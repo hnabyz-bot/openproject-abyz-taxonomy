@@ -1,7 +1,7 @@
 ---
 id: SPEC-OP-TAXONOMY-TEST-001
 version: 0.1.0
-status: planned
+status: completed
 created: 2026-06-23
 updated: 2026-06-23
 author: drake.lee

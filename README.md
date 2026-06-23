@@ -198,7 +198,6 @@ docker compose -p openproject-taxonomy \
 | manifest.yml 스키마 `checksum`→`target_sha256`, `severity`→`required` | ✅ 완료 | 2abf5d0 |
 | gemspec `assets/**/*` 포함 | ✅ 완료 | 2abf5d0 |
 | E2E 어댑터 오류 실패처리 + TC 릴리즈 아티팩트 | ✅ 완료 | c3db048 |
-| 비관리자 권한 모델 (non-admin row visibility) | ⏳ 미완 | — |
 
 ---
 
@@ -238,6 +237,34 @@ Selector alignment:
 Project list child indent: 46px
 Gantt timeline aligned: true
 ```
+
+---
+
+## RSpec 단위/통합 테스트
+
+SPEC-OP-TAXONOMY-TEST-001 구현 완료 (2026-06-23).
+
+**스위트 구성 (871 LOC):**
+
+| 파일 | 대상 | 요구사항 |
+|---|---|---|
+| `spec/models/abyz_taxonomy/node_spec.rb` | `Node` 모델 | REQ-A-01..06 |
+| `spec/models/abyz_taxonomy/assignment_spec.rb` | `Assignment` 모델 | REQ-A-07..08 |
+| `spec/services/abyz_taxonomy/taxonomy_service_helpers_spec.rb` | 헬퍼 메서드 | REQ-B-01..06 |
+| `spec/services/abyz_taxonomy/taxonomy_service_node_spec.rb` | 노드 CRUD 서비스 | REQ-C-01..08 |
+| `spec/services/abyz_taxonomy/taxonomy_service_assignment_spec.rb` | assign/tree/validate/serialize | REQ-C-09..15 |
+| `spec/services/abyz_taxonomy/taxonomy_service_op_creation_spec.rb` | OP Project/WP 생성 서비스 | REQ-D-01..06 |
+| `spec/lib/open_project/abyz_taxonomy/contract_patches_spec.rb` | 생성 가드 | REQ-E-01..04 |
+| `spec/integration/abyz_taxonomy/taxonomy_round_trip_spec.rb` | 전체 라운드트립 | REQ-G-01..02 |
+
+**실행 전제 조건:** 스펙은 호스트 OP 앱 컨텍스트에서 실행된다. 개발용 OP 컨테이너에 플러그인이 마운트된 상태에서 아래 명령을 실행한다.
+
+```bash
+# 개발용 컨테이너 내부에서 실행
+bundle exec rspec spec/ --format documentation
+```
+
+**커버리지 목표:** 85% (헬퍼 100%, 모델 95%+, 서비스/ContractPatches 90%+, OP-커플드 80%)
 
 ---
 
