@@ -94,6 +94,7 @@
 
 .abyz-taxonomy-project-child-row td.hierarchy {
   overflow: visible;
+  padding-left: 0;
 }
 
 .abyz-taxonomy-project-child-display-link {
