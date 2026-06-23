@@ -4,7 +4,7 @@
 # Each patch entry must specify:
 #   file:        path relative to repo root (patches/openproject/17.5.0/*.patch)
 #   target:      path of the file being patched inside the OP source tree
-#   checksum:    SHA256 of the original target file at this OP version
+#   target_sha256: SHA256 of the original target file at this OP version
 #   description: human-readable purpose
 #   op_version_range: ">=17.5.0,<17.6.0" (semver range for validity)
 
@@ -19,30 +19,30 @@ patches:
   # Injects wp_section taxonomy nodes as display-only section rows in the WP fast-table.
   - file: "patches/openproject/17.5.0/wp-section-row-builder.patch"
     target: "frontend/src/app/features/work-packages/components/wp-fast-table/builders/modes/grouped/group-header-builder.ts"
-    checksum: "4fff5074d9e95d8aaacfde1ac9a1e92efd84067ec8a2ff28ee221c168abacafe"
+    target_sha256: "4fff5074d9e95d8aaacfde1ac9a1e92efd84067ec8a2ff28ee221c168abacafe"
     description: "Render abyz_taxonomy wp_section nodes as display-only section rows"
     op_version_range: ">=17.5.0,<17.6.0"
-    severity: "required"
+    required: true
     apply_in_docker: false  # requires Angular frontend rebuild
 
   # WP row type discriminator
   # Adds taxonomy section row type to the WP row type union.
   - file: "patches/openproject/17.5.0/wp-row-interfaces.patch"
     target: "frontend/src/app/features/work-packages/components/wp-fast-table/wp-table.interfaces.ts"
-    checksum: "fbd74e1c9c1e07277b285b9892730196ec582b49c509f8b9794b930db92f836e"
+    target_sha256: "fbd74e1c9c1e07277b285b9892730196ec582b49c509f8b9794b930db92f836e"
     description: "Add taxonomy section row type to WP table row type union"
     op_version_range: ">=17.5.0,<17.6.0"
-    severity: "required"
+    required: true
     apply_in_docker: false  # requires Angular frontend rebuild
 
   # Project list title row
   # Adds taxonomy_section_name helper to Projects::RowComponent for use in views.
   - file: "patches/openproject/17.5.0/project-title-row-component.patch"
     target: "app/components/projects/row_component.rb"
-    checksum: "6ab3f5b8429e8f2a2630fed1a1e12f1a5f5588171a95565f81decebf5541e6a3"
+    target_sha256: "6ab3f5b8429e8f2a2630fed1a1e12f1a5f5588171a95565f81decebf5541e6a3"
     description: "Add taxonomy_section_name delegate to project row component"
     op_version_range: ">=17.5.0,<17.6.0"
-    severity: "required"
+    required: true
     apply_in_docker: true   # Ruby runtime patch — no recompilation needed
 
 # Note on apply_in_docker:
