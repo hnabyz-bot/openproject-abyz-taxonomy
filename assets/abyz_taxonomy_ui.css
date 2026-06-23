@@ -99,6 +99,7 @@
 
 .abyz-taxonomy-project-child-display-link {
   display: inline-block;
+  font-weight: normal;
   position: relative;
   left: 0;
   white-space: nowrap;
