@@ -75,7 +75,7 @@ cd ~/workspace/openproject-taxonomy-stack
 OP_IMAGE=openproject-abyz-taxonomy:OP_VERSION-ABYZ_VERSION \
 docker compose -p openproject-taxonomy up -d
 
-# Dev instance access: http://localhost:8087
+# 접속: http://localhost:8087 (로컬) | http://100.110.194.101:8087 (Tailscale)
 ```
 
 ---
