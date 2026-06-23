@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `build.sh` 실행 전 반드시 대상 docker-compose 파일 확인.
 
 ```
-개발용 OP  →  custom-openproject/docker-compose.taxonomy.yml  ✅ 허용
-운영 OP    →  openproject-stack 컨테이너                       ⛔ 절대 금지
+개발용 OP  →  ~/workspace/openproject-taxonomy-stack/ (런타임 스택 레포)  ✅ 허용
+운영 OP    →  openproject-stack 컨테이너                                  ⛔ 절대 금지
 ```
 
 ---
@@ -47,11 +47,12 @@ openproject-abyz-taxonomy/
   db/migrate/                   ← Schema migrations
   lib/                          ← Engine registration, API endpoints
   openproject-abyz-taxonomy.gemspec
-  custom-openproject/           ← Docker build system
+  custom-openproject/           ← Docker build system (build-only)
     Dockerfile                  ← OP_VERSION-pinned custom image
     build.sh                    ← Image builder (OP_VERSION + ABYZ_VERSION)
-    docker-compose.taxonomy.yml ← Dev instance
     Gemfile.plugins             ← Registers plugin in OP
+    DEPLOY_RUNBOOK.md           ← Build/deploy runbook
+    # 런타임(compose, nginx)은 별도 레포: ~/workspace/openproject-taxonomy-stack/
   patches/
     openproject/<op-version>/   ← Versioned OP source patches
       manifest.yml
@@ -69,11 +70,10 @@ openproject-abyz-taxonomy/
 # Build dev image
 OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
 
-# Start dev instance
-docker compose -p openproject-taxonomy \
-  --env-file custom-openproject/.env \
-  -f custom-openproject/docker-compose.taxonomy.yml \
-  up -d
+# Start dev instance (runtime stack lives in a separate repo)
+cd ~/workspace/openproject-taxonomy-stack
+OP_IMAGE=openproject-abyz-taxonomy:OP_VERSION-ABYZ_VERSION \
+docker compose -p openproject-taxonomy up -d
 
 # Dev instance access: http://localhost:8087
 ```
