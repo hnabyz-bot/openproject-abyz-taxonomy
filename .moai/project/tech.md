@@ -65,6 +65,4 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 ## 알려진 제약
 
-- 단위/통합 테스트 없음 (E2E만 존재, `spec/` 디렉터리는 계획 단계)
-- 비관리자 권한 미구현 — 현재 관리자 전용
 - gemspec version(`0.1.0`)과 배포 버전(`0.2.23`) 불일치
