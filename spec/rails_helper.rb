@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# Load the host OpenProject application's rails_helper (boots Rails, loads
-# FactoryBot, configures transactional fixtures, etc.), then this plugin's
-# local spec_helper for any plugin-specific tweaks.
-require "rails_helper"
-require_relative "spec_helper"
+# open_project/plugins/spec_helper boots Rails (rails_helper) and FactoryBot
+# from the host OP app, then configures transactional fixtures.
+# Direct `require "rails_helper"` self-resolves when spec/ is on $LOAD_PATH.
+require "open_project/plugins/spec_helper"

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Load the host OpenProject application's spec_helper.
-# When `bundle exec rspec` runs from the OP app root, the plugin's specs are
-# evaluated in the context of the host app, so the bare `spec_helper` resolves
-# to OP core's configuration (SimpleCov, DatabaseCleaner, etc.).
-require "spec_helper"
+# Bootstrap via the official OpenProject plugin helper.
+# Using bare `require "spec_helper"` self-resolves when spec/ is on $LOAD_PATH
+# (e.g. during `bundle exec rspec spec/` from the plugin directory),
+# so the host OP SimpleCov/DatabaseCleaner setup is never loaded.
+require "open_project/plugins/spec_helper"

@@ -16,10 +16,7 @@ RSpec.describe AbyzTaxonomy::TaxonomyService, type: :service do
     end
 
     it "reads from an ActionController::Parameters-like object via to_unsafe_h" do
-      params = instance_double("ActionController::Parameters")
-      allow(params).to receive(:respond_to?).and_call_original
-      allow(params).to receive(:respond_to?).with(:to_unsafe_h).and_return(true)
-      allow(params).to receive(:to_unsafe_h).and_return({ "code" => "abc" })
+      params = ActionController::Parameters.new("code" => "abc")
 
       expect(described_class.send(:fetch_value, params, "code")).to eq("abc")
     end
