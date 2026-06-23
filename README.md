@@ -183,10 +183,10 @@ OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
 **개발 인스턴스 기동:**
 
 ```bash
-docker compose -p openproject-taxonomy \
-  --env-file custom-openproject/.env \
-  -f custom-openproject/docker-compose.taxonomy.yml \
-  up -d
+# 런타임 스택 레포에서 실행
+cd ~/workspace/openproject-taxonomy-stack
+OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.23 \
+docker compose -p openproject-taxonomy up -d
 ```
 
 **릴리즈 블로커 현황:**
