@@ -4,7 +4,8 @@
   var state = {
     tree: null,
     loading: null,
-    allowNativeWpCreate: false
+    allowNativeWpCreate: false,
+    drag: null
   };
 
   function csrfToken() {
@@ -99,6 +100,29 @@
       return "섹션";
     }
     return "타이틀";
+  }
+
+  function taxonomyTooltipText(node) {
+    if (!node) {
+      return "";
+    }
+    var kind = node.nodeKind || node.node_kind;
+    var taxonomyType = node.rules && node.rules.taxonomyType;
+
+    if (taxonomyType === "portfolio") {
+      return "포트폴리오: 최상위 분류 단위입니다. 여러 프로그램 또는 타이틀을 묶는 전략적 그룹입니다. 실제 OpenProject 프로젝트가 아닌 표시 전용 행입니다.";
+    }
+    if (taxonomyType === "program") {
+      return "프로그램: 관련 타이틀 또는 프로젝트 그룹의 중간 분류입니다. 포트폴리오 하위에 위치하며 실제 OpenProject 프로젝트가 아닌 표시 전용 행입니다.";
+    }
+    if (kind === "wp_section") {
+      return "섹션: 프로젝트 내 Work Package 분류 단위입니다. 섹션 아래에 WP를 배치하여 업무를 구분합니다. 실제 OpenProject Work Package가 아닌 표시 전용 행입니다.";
+    }
+    return "타이틀: 프로젝트 목록을 구분하는 분류 행입니다. 타이틀 아래에 실제 프로젝트를 배치할 수 있습니다. 실제 OpenProject 프로젝트가 아닌 표시 전용 행입니다.";
+  }
+
+  function infoIcon(node) {
+    return '<span class="abyz-info-icon" data-tooltip="' + escapeHtml(taxonomyTooltipText(node)) + '" aria-label="설명">ⓘ</span>';
   }
 
   function taxonomyNodeByCode(code) {
@@ -398,7 +422,7 @@
       '<td colspan="' + columnCount + '" class="abyz-taxonomy-title-cell">',
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
-      '<span>' + escapeHtml(title.name) + '</span>',
+      '<span>' + escapeHtml(title.name) + infoIcon(title) + '</span>',
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(title)) + ', 실제 Project 아님, ' + count + '개 Project</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
@@ -572,6 +596,7 @@
 
     projectTitleEntries().forEach(function (entry) {
       var row = buildProjectTitleRow(entry, colspan);
+      addProjectTitleDropHandlers(row, entry.title.code);
       var projectRows = (entry.projects || []).map(function (project) {
         return rowsByIdentifier[project.identifier];
       }).filter(Boolean);
@@ -581,6 +606,7 @@
         projectRow.classList.add("abyz-taxonomy-project-child-row");
         projectRow.setAttribute("data-abyz-display-parent", entry.title.code);
         decorateProjectChildRow(projectRow);
+        injectProjectDragHandle(projectRow, entry.title.code);
         assignedRows.push(projectRow);
         orderedRows.push(projectRow);
       });
@@ -660,7 +686,7 @@
       '<td colspan="' + colspan + '" class="abyz-taxonomy-section-cell -no-highlighting">',
       '<div class="abyz-taxonomy-row-inner">',
       '<div class="abyz-taxonomy-row-label">',
-      '<span>' + escapeHtml(section.name) + '</span>',
+      '<span>' + escapeHtml(section.name) + infoIcon(section) + '</span>',
       '<span class="abyz-taxonomy-row-meta">' + escapeHtml(taxonomyTypeLabel(section)) + ', 실제 WP 아님, ' + count + '개 WP</span>',
       '</div>',
       '<div class="abyz-taxonomy-row-actions">',
@@ -670,6 +696,177 @@
       '</td>'
     ].join("");
     return row;
+  }
+
+  function getWpIdFromRow(row) {
+    var link = row.querySelector('a[href*="/work_packages/"]');
+    if (!link) {
+      return null;
+    }
+    var match = link.getAttribute("href").match(/\/work_packages\/(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  function getProjectIdentifierFromRow(row) {
+    return projectIdentifierFromRow(row);
+  }
+
+  function injectWpDragHandle(wpRow, sectionCode) {
+    if (wpRow.querySelector(".abyz-drag-handle")) {
+      return;
+    }
+    var firstCell = wpRow.querySelector("td");
+    if (!firstCell) {
+      return;
+    }
+    var handle = document.createElement("span");
+    handle.className = "abyz-drag-handle";
+    handle.setAttribute("draggable", "true");
+    handle.setAttribute("title", "드래그하여 다른 섹션으로 이동");
+    handle.innerHTML = "⠿";
+
+    handle.addEventListener("dragstart", function (e) {
+      var wpId = getWpIdFromRow(wpRow);
+      if (!wpId) {
+        e.preventDefault();
+        return;
+      }
+      state.drag = { type: "wp", id: wpId, fromCode: sectionCode };
+      e.dataTransfer.effectAllowed = "move";
+      wpRow.classList.add("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
+        if (r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
+          r.classList.add("abyz-drop-zone");
+        }
+      });
+    });
+
+    handle.addEventListener("dragend", function () {
+      wpRow.classList.remove("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over"), function (el) {
+        el.classList.remove("abyz-drop-zone");
+        el.classList.remove("abyz-drag-over");
+      });
+      state.drag = null;
+    });
+
+    firstCell.insertBefore(handle, firstCell.firstChild);
+  }
+
+  function injectProjectDragHandle(projectRow, titleCode) {
+    if (projectRow.querySelector(".abyz-drag-handle")) {
+      return;
+    }
+    var firstCell = projectRow.querySelector("td");
+    if (!firstCell) {
+      return;
+    }
+    var handle = document.createElement("span");
+    handle.className = "abyz-drag-handle";
+    handle.setAttribute("draggable", "true");
+    handle.setAttribute("title", "드래그하여 다른 타이틀로 이동");
+    handle.innerHTML = "⠿";
+
+    handle.addEventListener("dragstart", function (e) {
+      var identifier = getProjectIdentifierFromRow(projectRow);
+      if (!identifier) {
+        e.preventDefault();
+        return;
+      }
+      state.drag = { type: "project", id: identifier, fromCode: titleCode };
+      e.dataTransfer.effectAllowed = "move";
+      projectRow.classList.add("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-project-title-row"), function (r) {
+        if (r.getAttribute("data-abyz-taxonomy-code") !== titleCode) {
+          r.classList.add("abyz-drop-zone");
+        }
+      });
+    });
+
+    handle.addEventListener("dragend", function () {
+      projectRow.classList.remove("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over"), function (el) {
+        el.classList.remove("abyz-drop-zone");
+        el.classList.remove("abyz-drag-over");
+      });
+      state.drag = null;
+    });
+
+    firstCell.insertBefore(handle, firstCell.firstChild);
+  }
+
+  function addWpSectionDropHandlers(sectionRow, sectionCode) {
+    if (sectionRow.dataset.abyzDropBound === "true") {
+      return;
+    }
+    sectionRow.dataset.abyzDropBound = "true";
+
+    sectionRow.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.type === "wp" && state.drag.fromCode !== sectionCode) {
+        e.preventDefault();
+        sectionRow.classList.add("abyz-drag-over");
+      }
+    });
+
+    sectionRow.addEventListener("dragleave", function (e) {
+      if (!sectionRow.contains(e.relatedTarget)) {
+        sectionRow.classList.remove("abyz-drag-over");
+      }
+    });
+
+    sectionRow.addEventListener("drop", function (e) {
+      e.preventDefault();
+      sectionRow.classList.remove("abyz-drag-over");
+      if (state.drag && state.drag.type === "wp" && state.drag.fromCode !== sectionCode) {
+        var wpId = state.drag.id;
+        state.drag = null;
+        fetchJson("/abyz_taxonomy/ui/assignments/move_wp", {
+          method: "PATCH",
+          body: JSON.stringify({ wpId: wpId, toSectionCode: sectionCode })
+        }).then(function () {
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) {
+          window.alert(err.message);
+        });
+      }
+    });
+  }
+
+  function addProjectTitleDropHandlers(titleRow, titleCode) {
+    if (titleRow.dataset.abyzDropBound === "true") {
+      return;
+    }
+    titleRow.dataset.abyzDropBound = "true";
+
+    titleRow.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.type === "project" && state.drag.fromCode !== titleCode) {
+        e.preventDefault();
+        titleRow.classList.add("abyz-drag-over");
+      }
+    });
+
+    titleRow.addEventListener("dragleave", function (e) {
+      if (!titleRow.contains(e.relatedTarget)) {
+        titleRow.classList.remove("abyz-drag-over");
+      }
+    });
+
+    titleRow.addEventListener("drop", function (e) {
+      e.preventDefault();
+      titleRow.classList.remove("abyz-drag-over");
+      if (state.drag && state.drag.type === "project" && state.drag.fromCode !== titleCode) {
+        var identifier = state.drag.id;
+        state.drag = null;
+        fetchJson("/abyz_taxonomy/ui/assignments/move_project", {
+          method: "PATCH",
+          body: JSON.stringify({ projectIdentifier: identifier, toTitleCode: titleCode })
+        }).then(function () {
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) {
+          window.alert(err.message);
+        });
+      }
+    });
   }
 
   function buildGanttSectionRow(entry, height) {
@@ -753,30 +950,40 @@
       row.remove();
     });
 
-    var firstRow = tbody.querySelector("tr");
     var rowsById = workPackageRowMap(tbody);
     var colspan = tableColspan(table, 6);
+    var realRows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+    var orderedRows = [];
+    var assignedRows = [];
 
     wpSectionEntries()
       .filter(function (entry) {
         return entry.project && entry.project.identifier === projectIdentifier;
       })
       .forEach(function (entry) {
-        var row = buildWpSectionRow(entry, colspan);
+        var sectionRow = buildWpSectionRow(entry, colspan);
+        addWpSectionDropHandlers(sectionRow, entry.section.code);
+        orderedRows.push(sectionRow);
+
         var workPackageRows = (entry.workPackages || []).map(function (wp) {
           return rowsById[String(wp.id)];
         }).filter(Boolean);
 
-        if (workPackageRows.length) {
-          tbody.insertBefore(row, workPackageRows[0]);
-          workPackageRows.forEach(function (workPackageRow) {
-            tbody.insertBefore(workPackageRow, row.nextSibling);
-          });
-        } else if (firstRow) {
-          tbody.insertBefore(row, firstRow);
-        } else {
-        tbody.appendChild(row);
+        workPackageRows.forEach(function (wpRow) {
+          injectWpDragHandle(wpRow, entry.section.code);
+          assignedRows.push(wpRow);
+          orderedRows.push(wpRow);
+        });
+      });
+
+    realRows.forEach(function (row) {
+      if (assignedRows.indexOf(row) === -1) {
+        orderedRows.push(row);
       }
+    });
+
+    orderedRows.forEach(function (row) {
+      tbody.appendChild(row);
     });
 
     table.dataset.abyzTaxonomySignature = signature;

@@ -116,6 +116,36 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
+    def move_wp
+      wp_id = taxonomy_params["wpId"].to_i
+      to_section_code = taxonomy_params["toSectionCode"].to_s.strip
+
+      raise TaxonomyError, "wpId is required" if wp_id.zero?
+      raise TaxonomyError, "toSectionCode is required" if to_section_code.blank?
+
+      TaxonomyService.move_work_package_to_section!(work_package_id: wp_id, to_section_code:)
+      render json: { _type: "AbyzTaxonomyMoved", ok: true }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    rescue ActiveRecord::RecordInvalid => e
+      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+    end
+
+    def move_project
+      project_identifier = taxonomy_params["projectIdentifier"].to_s.strip
+      to_title_code = taxonomy_params["toTitleCode"].to_s.strip
+
+      raise TaxonomyError, "projectIdentifier is required" if project_identifier.blank?
+      raise TaxonomyError, "toTitleCode is required" if to_title_code.blank?
+
+      TaxonomyService.move_project_to_title!(project_identifier:, to_title_code:)
+      render json: { _type: "AbyzTaxonomyMoved", ok: true }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    rescue ActiveRecord::RecordInvalid => e
+      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+    end
+
     private
 
     def taxonomy_params
