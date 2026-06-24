@@ -649,16 +649,18 @@
   }
 
   function workPackageRenderSignature(tbody, projectIdentifier) {
-    var ids = [];
+    // Include DOM row order (both section and WP rows) so OP resets are detected
+    var rowSigs = [];
     Array.prototype.forEach.call(tbody.querySelectorAll("tr"), function (row) {
-      if (row.classList.contains("abyz-taxonomy-wp-section-row")) {
+      var code = row.getAttribute("data-abyz-taxonomy-code");
+      if (code) {
+        rowSigs.push("s:" + code);
         return;
       }
-
       var link = row.querySelector('a[href*="/work_packages/"]');
       var match = link && link.getAttribute("href").match(/\/work_packages\/(\d+)/);
       if (match) {
-        ids.push(match[1]);
+        rowSigs.push("w:" + match[1]);
       }
     });
 
@@ -667,12 +669,12 @@
         return entry.project && entry.project.identifier === projectIdentifier;
       })
       .map(function (entry) {
-        return entry.section.code + ":" + entry.section.name + ":" + (entry.workPackages || []).map(function (wp) {
+        return entry.section.code + ":" + (entry.workPackages || []).map(function (wp) {
           return wp.id;
         }).join(",");
       });
 
-    return ids.join("|") + "::" + sections.join("|");
+    return rowSigs.join("|") + "::" + sections.join("|");
   }
 
   function buildWpSectionRow(entry, colspan) {
@@ -731,8 +733,12 @@
         e.preventDefault();
         return;
       }
+      // Prevent OP's own WP sort handler from intercepting this drag
+      e.stopImmediatePropagation();
+      e.stopPropagation();
       state.drag = { type: "wp", id: wpId, fromCode: sectionCode };
       e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "abyz-wp-drag");
       wpRow.classList.add("abyz-dragging");
       Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
         if (r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
@@ -773,8 +779,12 @@
         e.preventDefault();
         return;
       }
+      // Prevent OP's own sort handler from intercepting this drag
+      e.stopImmediatePropagation();
+      e.stopPropagation();
       state.drag = { type: "project", id: identifier, fromCode: titleCode };
       e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "abyz-project-drag");
       projectRow.classList.add("abyz-dragging");
       Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-project-title-row"), function (r) {
         if (r.getAttribute("data-abyz-taxonomy-code") !== titleCode) {
