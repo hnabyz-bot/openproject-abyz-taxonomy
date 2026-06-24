@@ -160,6 +160,34 @@ curl -u "apikey:${OP_API_KEY}" -H "Content-Type: application/json" \
   -d '{"sectionCode":"wp.ra-maintenance.renewal","projectIdentifier":"ra-maintenance","subject":"정기 갱신 검토"}'
 ```
 
+### Validate API 계약 확인
+
+PROJ6 seed 또는 동등한 staging fixture가 준비된 뒤, n8n/Hermes 연동 전에 validate 계약을 확인한다.
+
+운영/스테이징 OpenProject 컨테이너에서는 먼저 PROJ6 taxonomy seed와 Rails-side contract를 확인한다.
+
+```bash
+bundle exec rake abyz_taxonomy:seed:proj6_legacy_titles
+bundle exec rake abyz_taxonomy:verify:proj6_contract
+```
+
+`ABYZ_TAXONOMY_PROJECT_IDENTIFIER`로 대상 프로젝트 identifier를 바꿀 수 있다. `ABYZ_TAXONOMY_STRICT_WP=1`을 함께 주면 legacy title WP assignment 누락 시 seed를 실패 처리한다. `ABYZ_TAXONOMY_ROLLBACK=1`은 같은 seed/검증 로직을 실행한 뒤 트랜잭션을 rollback하므로 staging rehearsal에 사용할 수 있다.
+
+```bash
+OP_BASE_URL=http://localhost:8087 \
+OP_E2E_API_TOKEN="$OP_API_KEY" \
+OP_VALIDATE_PROJECT_IDENTIFIER=PROJ6 \
+node scripts/e2e/op_taxonomy_validate_contract.js
+```
+
+검증 항목:
+
+- PROJ6 workflow taxonomy codes 전체는 HTTP 200, `valid=true`, `nodeKind=wp_section`
+- 누락된 `taxonomyCode`는 HTTP 422, `taxonomyCode is required`
+- 알 수 없는 `taxonomyCode`는 HTTP 422, `taxonomyCode is unknown`
+
+PROJ6 legacy seed includes the RA section codes used by `ra-request-to-op_v6`: `ra.common.eudamed_product_registration`, `ra.misc`, `ra.overseas_registration_followup`, `ra.project_certification.retrofit_hnx_r1`, `ra.regulatory_maintenance`, and `ra.regulatory_response`. `OP_VALIDATE_TAXONOMY_CODES=code1,code2` or `OP_VALIDATE_TAXONOMY_CODE=code1` can override the default all-code list for focused checks.
+
 ---
 
 ## 빌드
