@@ -211,3 +211,8 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+
+# ===========================================
+# E2E Test Results (local-only)
+# ===========================================
+test-results/
