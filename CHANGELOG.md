@@ -1,6 +1,19 @@
 # Changelog
 
-## [Unreleased] — release/17.x
+## [0.2.24] — 2026-06-24
+
+### Fixed
+
+- taxonomy child 프로젝트 행 계층 들여쓰기 정렬 오류 수정 (`padding-left: 0`) — `cloneNode(true)`가 OP depth-based padding을 상속하는 문제 해결 (프로젝트 목록 child indent 46px → 40px)
+- taxonomy child 프로젝트 이름 bold 상속 제거 (`font-weight: normal`) — `cloneNode(true)`로 복제된 링크가 OP 스타일 상속으로 bold 렌더링되는 문제 해결
+
+### Added
+
+- `test-results/` gitignore 추가 (로컬 전용 E2E 결과 파일 git 추적 제외)
+
+---
+
+## [0.2.23] — 2026-06-21 (이전 릴리즈)
 
 ### Added
 
@@ -40,3 +53,4 @@
 ---
 
 _변경 이력은 [Conventional Commits](https://www.conventionalcommits.org/) 규칙을 따릅니다._
+

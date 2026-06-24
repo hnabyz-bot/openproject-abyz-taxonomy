@@ -33,15 +33,20 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 
 ## 현재 개발 상태
 
-2026-06-21 기준 격리 개발 인스턴스:
+2026-06-24 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.23
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.24
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.24 UI 수정사항:**
+
+- taxonomy child 프로젝트 행 계층 들여쓰기 정렬 오류 수정 (`padding-left: 0`) — 프로젝트 목록 child indent 46px → 40px
+- taxonomy child 프로젝트 이름 bold 상속 제거 (`font-weight: normal`) — `cloneNode(true)` OP 스타일 상속 문제 해결
 
 운영 인스턴스(`openproject-stack-openproject-1`, `openproject/openproject:17`)는 개발 검증 중 재시작·수정 금지.
 
@@ -162,7 +167,7 @@ curl -u "apikey:${OP_API_KEY}" -H "Content-Type: application/json" \
 레포 루트에서 실행:
 
 ```bash
-OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
+OP_VERSION=17.5.0 ABYZ_VERSION=0.2.24 ./custom-openproject/build.sh
 ```
 
 **빌드 동작:**
@@ -179,13 +184,14 @@ OP_VERSION=17.5.0 ABYZ_VERSION=0.2.23 ./custom-openproject/build.sh
 - Docker 데몬 실행 중.
 - `OP_VERSION`에 해당하는 `patches/openproject/<op-version>/manifest.yml` 존재.
 - 패치 체크섬 검증을 위해 base 이미지 pull 가능한 네트워크.
+- `~/workspace/openproject-taxonomy-stack/.env` 파일 필수 — `OPENPROJECT_SECRET_KEY_BASE=<64바이트 hex>` 설정 (`openssl rand -hex 64`로 생성). 미설정 시 Rails production 기동 실패.
 
 **개발 인스턴스 기동:**
 
 ```bash
 # 런타임 스택 레포에서 실행
 cd ~/workspace/openproject-taxonomy-stack
-OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.23 \
+OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.24 \
 docker compose -p openproject-taxonomy up -d
 ```
 
@@ -229,13 +235,14 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 최근 통과 실행:
 
 ```text
-Result: test-results/op-taxonomy/20260621111705/result.json
+Result: test-results/op-taxonomy/20260624001756/result.json
 Selector alignment:
   titleTextAlign=left
   titleOffsetFromList=13px
   childTextIndentPx=16px
-Project list child indent: 46px
+Project list child indent: 40px (0.2.24 CSS fix 적용)
 Gantt timeline aligned: true
+TC-005 PASS | TC-050 PASS | TC-051 PASS | TC-052 PASS | TC-090 PASS
 ```
 
 ---

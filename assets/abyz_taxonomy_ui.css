@@ -94,10 +94,12 @@
 
 .abyz-taxonomy-project-child-row td.hierarchy {
   overflow: visible;
+  padding-left: 0;
 }
 
 .abyz-taxonomy-project-child-display-link {
   display: inline-block;
+  font-weight: normal;
   position: relative;
   left: 0;
   white-space: nowrap;
@@ -333,6 +335,71 @@
 .op-taxonomy-settings-notice {
   background: #f0fff4;
   color: #116329;
+}
+
+/* Tooltip */
+.abyz-info-icon {
+  display: inline-block;
+  margin-left: 4px;
+  cursor: help;
+  color: #888;
+  font-size: 12px;
+  position: relative;
+  vertical-align: middle;
+}
+
+.abyz-info-icon::after {
+  content: attr(data-tooltip);
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 22px;
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  z-index: 9999;
+  min-width: 280px;
+  max-width: 360px;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+}
+
+.abyz-info-icon:hover::after {
+  display: block;
+}
+
+/* Drag & Drop */
+.abyz-drag-handle {
+  display: inline-block;
+  cursor: grab;
+  color: #aaa;
+  font-size: 14px;
+  margin-right: 6px;
+  user-select: none;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.abyz-drag-handle:active {
+  cursor: grabbing;
+}
+
+.abyz-dragging {
+  opacity: 0.4;
+}
+
+.abyz-drop-zone {
+  outline: 2px dashed #5d8fd1;
+  outline-offset: -2px;
+}
+
+.abyz-drag-over {
+  background-color: #e8f0fe !important;
+  outline: 2px solid #4285f4 !important;
+  outline-offset: -2px;
 }
 
 @media (max-width: 700px) {

@@ -193,6 +193,28 @@ module AbyzTaxonomy
       create_or_update_assignment!(node: section, entity: work_package, role: DISPLAY_PARENT_ROLE)
     end
 
+    def move_work_package_to_section!(work_package_id:, to_section_code:)
+      work_package = find_work_package!(work_package_id)
+      to_section = find_wp_section!(to_section_code)
+
+      Assignment.transaction do
+        Assignment.where(entity_type: "WorkPackage", entity_id: work_package.id,
+                         role: WORK_PACKAGE_ASSIGNMENT_ROLES).destroy_all
+        create_or_update_assignment!(node: to_section, entity: work_package, role: DISPLAY_PARENT_ROLE)
+      end
+    end
+
+    def move_project_to_title!(project_identifier:, to_title_code:)
+      project = find_project!(project_identifier)
+      to_title = find_project_title!(to_title_code)
+
+      Assignment.transaction do
+        Assignment.where(entity_type: "Project", entity_id: project.id,
+                         role: PROJECT_ASSIGNMENT_ROLES).destroy_all
+        create_or_update_assignment!(node: to_title, entity: project, role: DISPLAY_PARENT_ROLE)
+      end
+    end
+
     def tree
       {
         projectTitles: serialize_project_titles,
