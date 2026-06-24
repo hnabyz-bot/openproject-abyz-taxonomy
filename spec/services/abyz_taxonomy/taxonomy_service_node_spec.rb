@@ -51,6 +51,16 @@ RSpec.describe AbyzTaxonomy::TaxonomyService, type: :service do
       expect(node.scope_id).to eq(project.id)
     end
 
+    it "matches projectIdentifier case-insensitively" do
+      project.update!(identifier: "proj-case")
+
+      node = described_class.create_wp_section!(
+        "projectIdentifier" => "PROJ-CASE", "name" => "Backlog", "code" => "wp.section.case"
+      )
+
+      expect(node.scope_id).to eq(project.id)
+    end
+
     it "raises a 404 TaxonomyError for an unknown project identifier (AC-06)" do
       expect { described_class.create_wp_section!("projectIdentifier" => "ghost", "name" => "X") }
         .to raise_error(AbyzTaxonomy::TaxonomyError) { |error| expect(error.status).to eq(404) }

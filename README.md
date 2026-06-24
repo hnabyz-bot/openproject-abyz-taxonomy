@@ -36,12 +36,18 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 2026-06-24 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.24
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.31
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.31 RA validate/rollout 수정사항:**
+
+- `projectIdentifier` lookup을 case-insensitive 공통 helper로 정리해 validate와 mutating path의 lookup 계약을 맞춤
+- production 후보 이미지에서 `ABYZ-DEBUG` UI 로그 제거
+- rollout audit이 image tag/label 일치, image 내부 lookup helper, exact lookup 회귀, UI debug log 포함 여부를 검증
 
 **0.2.24 UI 수정사항:**
 
@@ -195,7 +201,7 @@ PROJ6 legacy seed includes the RA section codes used by `ra-request-to-op_v6`: `
 레포 루트에서 실행:
 
 ```bash
-OP_VERSION=17.5.0 ABYZ_VERSION=0.2.24 ./custom-openproject/build.sh
+OP_VERSION=17.5.0 ABYZ_VERSION=0.2.31 ./custom-openproject/build.sh
 ```
 
 **빌드 동작:**
@@ -219,7 +225,7 @@ OP_VERSION=17.5.0 ABYZ_VERSION=0.2.24 ./custom-openproject/build.sh
 ```bash
 # 런타임 스택 레포에서 실행
 cd ~/workspace/openproject-taxonomy-stack
-OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.24 \
+OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.31 \
 docker compose -p openproject-taxonomy up -d
 ```
 

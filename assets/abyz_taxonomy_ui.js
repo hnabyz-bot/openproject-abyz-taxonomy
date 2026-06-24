@@ -981,6 +981,7 @@
     });
 
     var rowsById = workPackageRowMap(tbody);
+
     var colspan = tableColspan(table, 6);
     var realRows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
     var orderedRows = [];

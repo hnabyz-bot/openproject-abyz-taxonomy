@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.2.31] — 2026-06-24
+
+### Fixed
+
+- `projectIdentifier` lookup을 case-insensitive 공통 helper로 정리해 `validate`, section 생성, mutating taxonomy path가 같은 lookup 계약을 사용한다.
+- production 후보 이미지에서 WP section UI debug 로그(`ABYZ-DEBUG`)를 제거했다.
+
+### Added
+
+- `/api/v3/abyz_taxonomy/validate` E2E contract script에 alternate-case `projectIdentifier` 검증을 추가했다.
+- `ra-request-to-op_v6` rollout audit이 image tag/label 일치, image 내부 lookup helper, exact lookup 회귀, UI debug log 포함 여부를 검증할 수 있도록 production gate를 강화했다.
+
+---
+
+## [0.2.29] — 2026-06-24
+
+### Fixed
+
+- **TC-055 버그 수정**: 신규 WP 섹션이 알파벳 정렬 마지막 위치에 추가될 때 기존 마지막 섹션의 WP가 신규 섹션 하위로 이동되어 보이는 버그 수정
+  - 원인: `renderWpSectionRows`에서 `abyzTaxonomySignature`를 pre-render DOM 상태로 저장하여, Angular CD가 section rows 제거 시 signature가 일치 → SKIP → section rows 영구 복원 불가
+  - 수정: orderedRows 기반 post-render 예상 signature를 저장 → section rows 제거 시 mismatch → 재렌더 → 올바른 순서 복원
+
+### Added
+
+- DnD(드래그 앤 드롭) WP 섹션 간 이동 기능 (`data-abyz-drag-handle`, `draggable="true"`)
+- 섹션/타이틀 행에 툴팁 ⓘ 아이콘 추가 (`data-tooltip`, `.abyz-info-icon`)
+- HTML5 DnD UI 검증 E2E 테스트 (TC-057, TC-058)
+- 신규 기능 E2E 테스트 스위트 (TC-053 툴팁, TC-055 WP 섹션 버그픽스, TC-056 프로젝트 이동)
+
+---
+
 ## [0.2.24] — 2026-06-24
 
 ### Fixed
@@ -53,4 +84,3 @@
 ---
 
 _변경 이력은 [Conventional Commits](https://www.conventionalcommits.org/) 규칙을 따릅니다._
-

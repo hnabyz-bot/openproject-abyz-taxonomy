@@ -233,7 +233,7 @@ module AbyzTaxonomy
       node = Node.active.find_by(code: taxonomy_code) if taxonomy_code.present?
       errors << "taxonomyCode is unknown" if taxonomy_code.present? && node.nil?
 
-      project = Project.find_by(identifier: project_identifier) if project_identifier.present?
+      project = find_project_by_identifier(project_identifier) if project_identifier.present?
       errors << "projectIdentifier is unknown" if project_identifier.present? && project.nil?
 
       if node&.node_kind == WP_SECTION_KIND && project && node.scope_type == "project" && node.scope_id != project.id
@@ -308,10 +308,17 @@ module AbyzTaxonomy
     end
 
     def find_project!(identifier)
-      project = Project.find_by(identifier:)
+      project = find_project_by_identifier(identifier)
       raise TaxonomyError.new("projectIdentifier is unknown", status: 404) unless project
 
       project
+    end
+
+    def find_project_by_identifier(identifier)
+      normalized = identifier.to_s.strip
+      return nil if normalized.blank?
+
+      Project.where("LOWER(identifier) = ?", normalized.downcase).first
     end
 
     def find_work_package!(id)
