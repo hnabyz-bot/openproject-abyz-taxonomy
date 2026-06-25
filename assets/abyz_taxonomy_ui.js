@@ -550,12 +550,16 @@
       var titleItem = buildProjectSelectTitleItem(entry);
       injectNodeReorderHandle(titleItem, entry.title.code, "title", ".abyz-taxonomy-project-select-title-action");
       addNodeReorderDropHandlers(titleItem, entry.title.code, "title", ".abyz-taxonomy-project-title-row, .abyz-taxonomy-project-select-title");
+      // @MX:NOTE: sidebar dropdown title li also accepts project drops (move_project) — fixes #4
+      addProjectSelectTitleDropHandlers(titleItem, entry.title.code);
       orderedItems.push(titleItem);
       (entry.projects || []).forEach(function (project) {
         var item = itemsByIdentifier[project.identifier];
         if (item) {
           item.classList.add("abyz-taxonomy-project-select-child");
           item.setAttribute("data-abyz-display-parent", entry.title.code);
+          // @MX:NOTE: inject drag handle on sidebar project li so it can be moved between titles (#4)
+          injectProjectSelectDragHandle(item, project.identifier, entry.title.code);
           assignedItems.push(item);
           orderedItems.push(item);
         }
@@ -912,6 +916,84 @@
   }
 
   var DRAG_HANDLE_SVG = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
+
+  // @MX:NOTE: sidebar dropdown project drag/drop — mirrors list injectProjectDragHandle/addProjectTitleDropHandlers but for <li> structure (#4)
+  function injectProjectSelectDragHandle(item, identifier, titleCode) {
+    var guardKey = "abyzProjectSelectDrag";
+    if (item.dataset[guardKey] === titleCode) { return; }
+    var existing = item.querySelector(".abyz-project-select-drag-handle");
+    if (existing) { existing.remove(); }
+    item.dataset[guardKey] = titleCode;
+
+    var handle = document.createElement("span");
+    handle.className = "abyz-drag-handle abyz-project-select-drag-handle";
+    handle.setAttribute("draggable", "true");
+    handle.setAttribute("title", "드래그하여 다른 타이틀로 이동");
+    handle.innerHTML = DRAG_HANDLE_SVG;
+
+    handle.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+
+    handle.addEventListener("dragstart", function (e) {
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      state.drag = { type: "project", id: identifier, fromCode: titleCode };
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "abyz-project-drag");
+      item.classList.add("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-project-select-title"), function (r) {
+        if (r.getAttribute("data-abyz-taxonomy-code") !== titleCode) {
+          r.classList.add("abyz-drop-zone");
+        }
+      });
+    });
+
+    handle.addEventListener("dragend", function () {
+      item.classList.remove("abyz-dragging");
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over"), function (el) {
+        el.classList.remove("abyz-drop-zone", "abyz-drag-over");
+      });
+      state.drag = null;
+    });
+
+    item.insertBefore(handle, item.firstChild);
+  }
+
+  // @MX:NOTE: sidebar dropdown title li drop handler — accepts project drops, calls move_project (#4)
+  function addProjectSelectTitleDropHandlers(titleItem, titleCode) {
+    var guardKey = "abyzProjectSelectDrop";
+    if (titleItem.dataset[guardKey] === "true") { return; }
+    titleItem.dataset[guardKey] = "true";
+
+    titleItem.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.type === "project" && state.drag.fromCode !== titleCode) {
+        e.preventDefault();
+        titleItem.classList.add("abyz-drag-over");
+      }
+    });
+
+    titleItem.addEventListener("dragleave", function (e) {
+      if (!titleItem.contains(e.relatedTarget)) {
+        titleItem.classList.remove("abyz-drag-over");
+      }
+    });
+
+    titleItem.addEventListener("drop", function (e) {
+      e.preventDefault();
+      if (state.drag && state.drag.type === "project" && state.drag.fromCode !== titleCode) {
+        var identifier = state.drag.id;
+        titleItem.classList.remove("abyz-drag-over");
+        state.drag = null;
+        fetchJson("/abyz_taxonomy/ui/assignments/move_project", {
+          method: "PATCH",
+          body: JSON.stringify({ projectIdentifier: identifier, toTitleCode: titleCode })
+        }).then(function () {
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) {
+          window.alert(err.message);
+        });
+      }
+    });
+  }
 
   function injectNodeReorderHandle(element, nodeCode, nodeType, containerSelector) {
     var guardKey = "abyzReorderHandle" + nodeType;

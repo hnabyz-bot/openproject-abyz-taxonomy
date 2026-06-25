@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.37] — 2026-06-25
+
+### Fixed
+
+- **사이드바 "모든 프로젝트" 드롭다운에서 프로젝트 이동(타이틀 간) 지원** (#4): 사용자 실사용 피드백으로 발견된 회귀. `renderProjectSelectTaxonomyRows`가 사이드바 프로젝트 `<li>`에 드래그 핸들을 주입하지 않아 dragstart가 일어나지 않고 move_project가 호출되지 않았다.
+  - 신규 함수 `injectProjectSelectDragHandle` + `addProjectSelectTitleDropHandlers` (사이드바 `<li>` 구조 맞춤, 목록용 tr 기반 함수와 별개)
+  - 기존 `PATCH /abyz_taxonomy/ui/assignments/move_project` 재사용 — 신규 API 불필요
+  - 전수 재검증(진짜 마우스 DnD + DB 변경 + 스크린샷 비전)으로 6종 케이스(A1/A2/E1/E2/B/D) 전부 PASS 확증
+
+### Added
+
+- `scripts/e2e/op_taxonomy_drag_full_matrix_e2e.js` — 드래그 이동 전수 매트릭스 검증(모든 화면 × 모든 이동 케이스). 초기 검증이 사이드바 프로젝트 이동을 누락한 빈틈을 보완.
+
+---
+
 ## [0.2.35] — 2026-06-25
 
 ### Added
