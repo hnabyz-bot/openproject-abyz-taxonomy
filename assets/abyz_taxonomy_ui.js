@@ -547,7 +547,10 @@
     });
 
     projectTitleEntries().forEach(function (entry) {
-      orderedItems.push(buildProjectSelectTitleItem(entry));
+      var titleItem = buildProjectSelectTitleItem(entry);
+      injectNodeReorderHandle(titleItem, entry.title.code, "title", ".abyz-taxonomy-project-select-title-action");
+      addNodeReorderDropHandlers(titleItem, entry.title.code, "title", ".abyz-taxonomy-project-title-row, .abyz-taxonomy-project-select-title");
+      orderedItems.push(titleItem);
       (entry.projects || []).forEach(function (project) {
         var item = itemsByIdentifier[project.identifier];
         if (item) {
@@ -597,6 +600,8 @@
     projectTitleEntries().forEach(function (entry) {
       var row = buildProjectTitleRow(entry, colspan);
       addProjectTitleDropHandlers(row, entry.title.code);
+      addNodeReorderDropHandlers(row, entry.title.code, "title", ".abyz-taxonomy-project-title-row, .abyz-taxonomy-project-select-title");
+      injectNodeReorderHandle(row, entry.title.code, "title", ".abyz-taxonomy-row-inner");
       var projectRows = (entry.projects || []).map(function (project) {
         return rowsByIdentifier[project.identifier];
       }).filter(Boolean);
@@ -906,6 +911,123 @@
     });
   }
 
+  var DRAG_HANDLE_SVG = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
+
+  function injectNodeReorderHandle(element, nodeCode, nodeType, containerSelector) {
+    var guardKey = "abyzReorderHandle" + nodeType;
+    if (element.dataset[guardKey]) { return; }
+    element.dataset[guardKey] = "true";
+
+    var container = element.querySelector(containerSelector);
+    if (!container) { return; }
+
+    var handle = document.createElement("span");
+    handle.className = "abyz-drag-handle abyz-reorder-handle";
+    handle.setAttribute("draggable", "true");
+    handle.setAttribute("title", "드래그하여 순서 변경");
+    handle.innerHTML = DRAG_HANDLE_SVG;
+
+    handle.addEventListener("mousedown", function (e) {
+      e.stopPropagation();
+    });
+
+    handle.addEventListener("dragstart", function (e) {
+      e.stopImmediatePropagation();
+      e.stopPropagation();
+      state.drag = { type: nodeType, code: nodeCode };
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "abyz-reorder-drag");
+      element.classList.add("abyz-dragging");
+
+      var selector = nodeType === "title"
+        ? ".abyz-taxonomy-project-title-row, .abyz-taxonomy-project-select-title"
+        : ".abyz-taxonomy-wp-section-row";
+
+      Array.prototype.forEach.call(document.querySelectorAll(selector), function (r) {
+        if (r.getAttribute("data-abyz-taxonomy-code") !== nodeCode) {
+          r.classList.add("abyz-drop-zone");
+        }
+      });
+    });
+
+    handle.addEventListener("dragend", function () {
+      element.classList.remove("abyz-dragging");
+      Array.prototype.forEach.call(
+        document.querySelectorAll(".abyz-drop-zone, .abyz-drop-insert-before, .abyz-drop-insert-after"),
+        function (el) {
+          el.classList.remove("abyz-drop-zone", "abyz-drop-insert-before", "abyz-drop-insert-after");
+        }
+      );
+      state.drag = null;
+    });
+
+    container.insertBefore(handle, container.firstChild);
+  }
+
+  function addNodeReorderDropHandlers(element, nodeCode, nodeType, siblingsSelector) {
+    var guardKey = "abyzReorderDrop" + nodeType;
+    if (element.dataset[guardKey]) { return; }
+    element.dataset[guardKey] = "true";
+
+    element.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.type === nodeType && state.drag.code !== nodeCode) {
+        e.preventDefault();
+        var rect = element.getBoundingClientRect();
+        element.classList.remove("abyz-drop-insert-before", "abyz-drop-insert-after");
+        if (e.clientY < rect.top + rect.height / 2) {
+          element.classList.add("abyz-drop-insert-before");
+        } else {
+          element.classList.add("abyz-drop-insert-after");
+        }
+      }
+    });
+
+    element.addEventListener("dragleave", function (e) {
+      if (!element.contains(e.relatedTarget)) {
+        element.classList.remove("abyz-drop-insert-before", "abyz-drop-insert-after");
+      }
+    });
+
+    element.addEventListener("drop", function (e) {
+      e.preventDefault();
+      if (state.drag && state.drag.type === nodeType && state.drag.code !== nodeCode) {
+        var rect = element.getBoundingClientRect();
+        var insertBefore = e.clientY < rect.top + rect.height / 2;
+        var draggedCode = state.drag.code;
+        var beforeCode;
+
+        if (insertBefore) {
+          beforeCode = nodeCode;
+        } else {
+          var siblings = Array.prototype.slice.call(document.querySelectorAll(siblingsSelector));
+          var foundTarget = false;
+          beforeCode = null;
+          for (var i = 0; i < siblings.length; i++) {
+            var sibCode = siblings[i].getAttribute("data-abyz-taxonomy-code");
+            if (sibCode === draggedCode) { continue; }
+            if (foundTarget) {
+              beforeCode = sibCode;
+              break;
+            }
+            if (sibCode === nodeCode) { foundTarget = true; }
+          }
+        }
+
+        element.classList.remove("abyz-drop-insert-before", "abyz-drop-insert-after");
+        state.drag = null;
+
+        fetchJson("/abyz_taxonomy/ui/assignments/reorder_node", {
+          method: "PATCH",
+          body: JSON.stringify({ code: draggedCode, beforeCode: beforeCode || "" })
+        }).then(function () {
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) {
+          window.alert(err.message);
+        });
+      }
+    });
+  }
+
   function buildGanttSectionRow(entry, height) {
     var row = document.createElement("div");
     row.className = "abyz-taxonomy-gantt-section-row";
@@ -1001,6 +1123,8 @@
       .forEach(function (entry) {
         var sectionRow = buildWpSectionRow(entry, colspan);
         addWpSectionDropHandlers(sectionRow, entry.section.code);
+        addNodeReorderDropHandlers(sectionRow, entry.section.code, "section", ".abyz-taxonomy-wp-section-row");
+        injectNodeReorderHandle(sectionRow, entry.section.code, "section", ".abyz-taxonomy-row-inner");
         orderedRows.push(sectionRow);
 
         var workPackageRows = (entry.workPackages || []).map(function (wp) {

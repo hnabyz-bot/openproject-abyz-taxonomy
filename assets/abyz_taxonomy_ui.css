@@ -418,3 +418,27 @@ tr:hover .abyz-drag-handle {
     flex-wrap: wrap;
   }
 }
+
+/* Drag handle visibility for title/section rows and sidebar items */
+.abyz-taxonomy-project-title-row:hover .abyz-drag-handle,
+.abyz-taxonomy-wp-section-row:hover .abyz-drag-handle,
+.abyz-taxonomy-project-select-title:hover .abyz-drag-handle {
+  opacity: 1;
+}
+
+/* Reorder insert position indicators */
+.abyz-drop-insert-before td {
+  border-top: 3px solid #4285f4 !important;
+}
+
+.abyz-drop-insert-after td {
+  border-bottom: 3px solid #4285f4 !important;
+}
+
+.abyz-drop-insert-before.abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
+  border-top: 3px solid #4285f4;
+}
+
+.abyz-drop-insert-after.abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
+  border-bottom: 3px solid #4285f4;
+}

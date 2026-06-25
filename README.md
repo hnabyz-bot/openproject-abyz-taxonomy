@@ -36,12 +36,19 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 2026-06-25 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.34
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.36
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.35 드래그 앤 드롭 노드 reorder (진짜 마우스 e2e 검증 완료):**
+
+- 타이틀(포트폴리오/프로그램/타이틀)과 WP 섹션의 순서를 드래그로 수동 정렬한다. 사이드바 "모든 프로젝트" 드롭다운에서도 동일하게 동작한다.
+- 백엔드: `PATCH /abyz_taxonomy/ui/assignments/reorder_node` (code, beforeCode)
+- 드롭 위치(clientY) 기반 before/after 삽입 인디케이터 (파란 border)
+- **검증**: 진짜 마우스(`page.mouse`) DnD 5종(TC-A 타이틀 reorder / TC-B WP 섹션 reorder / TC-C 프로젝트 이동 / TC-D WP 이동 / TC-E 사이드바 reorder) 전부 PASS — 이벤트 진단(dragStart/dragOver/drop) + DB position/parent 변경 + 스크린샷 비전 분석으로 삼중 확증. 스크립트: `scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js`
 
 **0.2.34 TC-055 근본 수정 (Angular mid-render race condition):**
 
@@ -280,6 +287,17 @@ TC-005 PASS | TC-050 PASS | TC-051 PASS | TC-052 PASS | TC-090 PASS
 ```
 
 ---
+
+
+**진짜 마우스 DnD 검증 (dispatchEvent 함정 방지):** 합성 `dispatchEvent(new DragEvent(...))`는 `isTrusted=false`로 실제 사용자 마우스 드래그와 1:1 동작을 보장하지 않는다. 드래그 reorder 등 UI 동작의 최종 검증은 반드시 `page.mouse` 수동 제어(mousedown→mousemove steps→mouseup)로 진짜 HTML5 DnD 이벤트를 발생시키고, (1) 드래그 중 인디케이터·드롭 후 결과 스크린샷을 비전 분석으로 시각 확인하고 (2) DB(API) position/parent 변경으로 영속성을 이중 확인한다.
+
+```bash
+NODE_PATH=/tmp/op-taxonomy-playwright-runner/node_modules \
+OP_BASE_URL=http://localhost:8087 \
+node scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js
+```
+
+검증 결과 아티팩트: `/tmp/op-taxonomy-playwright-runner/real-out/real_<timestamp>/` (TC별 before/mid/after 스크린샷 + result.json). 이벤트 발생 진단은 `scripts/e2e/diagnose_dnd_events.js`.
 
 ## RSpec 단위/통합 테스트
 

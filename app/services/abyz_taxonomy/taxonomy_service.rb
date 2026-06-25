@@ -215,6 +215,32 @@ module AbyzTaxonomy
       end
     end
 
+    def reorder_node!(code, before_code:)
+      node = find_node!(code)
+
+      siblings_scope = Node.active.where(node_kind: node.node_kind)
+      siblings_scope = siblings_scope.where(scope_id: node.scope_id) if node.scope_type == "project"
+
+      siblings = siblings_scope.ordered.to_a
+      siblings.reject! { |n| n.id == node.id }
+
+      if before_code.present?
+        before_node = siblings.find { |n| n.code == before_code }
+        idx = before_node ? siblings.index(before_node) : siblings.length
+        siblings.insert(idx, node)
+      else
+        siblings << node
+      end
+
+      Node.transaction do
+        siblings.each_with_index do |n, i|
+          Node.where(id: n.id).update_all(position: i, updated_at: Time.current)
+        end
+      end
+
+      node
+    end
+
     def tree
       {
         projectTitles: serialize_project_titles,

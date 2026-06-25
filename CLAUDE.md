@@ -119,6 +119,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 ---
 
+> **[HARD] 진짜 마우스 e2e 필수**: DnD/클릭 등 UI 동작의 최종 검증은 합성 `dispatchEvent`가 아닌 `page.mouse` 수동 제어(mousedown→mousemove steps→mouseup) 진짜 마우스 이벤트로 수행한다. 드래그 중 인디케이터·드롭 후 결과를 스크린샷으로 시각 확인하고 DB(API) 변경으로 영속성을 이중 검증한다. (교훈: 합성 이벤트 PASS를 진짜 동작으로 오인한 사례 — `scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js` 참고)
+
 ## MoAI Workflow
 
 ```bash

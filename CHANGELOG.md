@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.35] — 2026-06-25
+
+### Added
+
+- **드래그 앤 드롭 노드 reorder(순서 변경) 기능**: 타이틀(포트폴리오/프로그램/타이틀) 및 WP 섹션의 순서를 드래그로 수동 정렬한다. (#3)
+  - 백엔드: `PATCH /abyz_taxonomy/ui/assignments/reorder_node` (code, beforeCode) 신규 — `TaxonomyService.reorder_node!`가 형제 노드의 position을 트랜잭션으로 갱신
+  - 프론트엔드: `injectNodeReorderHandle` + `addNodeReorderDropHandlers` — 프로젝트 목록 테이블, 프로젝트 셀렉터/사이드바 "모든 프로젝트" 드롭다운, WP 테이블 섹션에 적용
+  - 드롭 위치(clientY) 기반 before/after 삽입 인디케이터 (`.abyz-drop-insert-before/after`)
+
+### Changed
+
+- **E2E 검증 방식 강화**: dispatchEvent 합성 DragEvent를 1차 스크리닝용으로만 사용하고, 최종 검증은 `page.mouse` 수동 제어(mousedown→mousemove steps→mouseup) 진짜 마우스 DnD + 스크린샷 비전 분석으로 수행한다. 진단 결과 `dragStart=1, dragOver=11, drop=1`로 실제 HTML5 DnD 이벤트 발생을 확인했고, DB position/parent 변경으로 영속성을 이중 검증했다.
+- `scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js`, `scripts/e2e/diagnose_dnd_events.js` 신규 추가 — 드래그 reorder 5종(TC-A~E) 진짜 마우스 검증 및 이벤트 진단.
+
+---
+
 ## [0.2.34] — 2026-06-25
 
 ### Fixed
