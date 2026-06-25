@@ -617,6 +617,7 @@
         row.classList.remove("abyz-taxonomy-project-child-row");
         row.removeAttribute("data-abyz-display-parent");
         resetProjectChildRow(row);
+        injectProjectDragHandle(row, null);
         orderedRows.push(row);
       }
     });
@@ -775,8 +776,13 @@
   }
 
   function injectProjectDragHandle(projectRow, titleCode) {
-    if (projectRow.querySelector(".abyz-drag-handle")) {
-      return;
+    var existing = projectRow.querySelector(".abyz-drag-handle");
+    if (existing) {
+      // Re-inject if titleCode changed (e.g. project moved between titles or unassigned)
+      if (existing.dataset.abyzTitleCode === (titleCode || "")) {
+        return;
+      }
+      existing.remove();
     }
     var firstCell = projectRow.querySelector("td");
     if (!firstCell) {
@@ -784,6 +790,7 @@
     }
     var handle = document.createElement("span");
     handle.className = "abyz-drag-handle";
+    handle.dataset.abyzTitleCode = titleCode || "";
     handle.setAttribute("draggable", "true");
     handle.setAttribute("title", "드래그하여 다른 타이틀로 이동");
     handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
