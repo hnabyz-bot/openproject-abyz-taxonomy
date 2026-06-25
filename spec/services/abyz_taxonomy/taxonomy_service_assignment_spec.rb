@@ -122,6 +122,18 @@ RSpec.describe AbyzTaxonomy::TaxonomyService, type: :service do
       expect(result[:valid]).to be(false)
       expect(result[:errors]).to include("taxonomyCode does not belong to projectIdentifier")
     end
+
+    it "matches projectIdentifier case-insensitively" do
+      project = create(:project, identifier: "proj-case")
+      section = create(:abyz_taxonomy_node, :wp_section, project:)
+
+      result = described_class.validate(
+        "taxonomyCode" => section.code, "projectIdentifier" => "PROJ-CASE"
+      )
+
+      expect(result[:valid]).to be(true)
+      expect(result[:errors]).to eq([])
+    end
   end
 
   describe "serializers (REQ-C-15)" do

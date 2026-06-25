@@ -33,15 +33,21 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 
 ## 현재 개발 상태
 
-2026-06-24 기준 격리 개발 인스턴스:
+2026-06-25 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.24
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.34
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.34 TC-055 근본 수정 (Angular mid-render race condition):**
+
+- Angular CD가 WP 행을 재렌더하는 mid-render 구간에 `renderWpSectionRows()`가 실행될 때, 링크(`<a href>`)가 없는 WP 행이 미할당 풀로 오인돼 마지막 섹션(SEC-Z) 이후에 배치되는 버그 수정
+- `realRows.forEach`에서 `a[href*="/work_packages/"]` 없는 행을 건너뜀 → Angular 렌더 완료 후 다음 refresh 사이클에서 정상 처리
+- 0.2.32: validate 엔드포인트 권한 분리 (admin gate 제거) + API route별 authorize_admin 적용
 
 **0.2.24 UI 수정사항:**
 
@@ -160,6 +166,34 @@ curl -u "apikey:${OP_API_KEY}" -H "Content-Type: application/json" \
   -d '{"sectionCode":"wp.ra-maintenance.renewal","projectIdentifier":"ra-maintenance","subject":"정기 갱신 검토"}'
 ```
 
+### Validate API 계약 확인
+
+PROJ6 seed 또는 동등한 staging fixture가 준비된 뒤, n8n/Hermes 연동 전에 validate 계약을 확인한다.
+
+운영/스테이징 OpenProject 컨테이너에서는 먼저 PROJ6 taxonomy seed와 Rails-side contract를 확인한다.
+
+```bash
+bundle exec rake abyz_taxonomy:seed:proj6_legacy_titles
+bundle exec rake abyz_taxonomy:verify:proj6_contract
+```
+
+`ABYZ_TAXONOMY_PROJECT_IDENTIFIER`로 대상 프로젝트 identifier를 바꿀 수 있다. `ABYZ_TAXONOMY_STRICT_WP=1`을 함께 주면 legacy title WP assignment 누락 시 seed를 실패 처리한다. `ABYZ_TAXONOMY_ROLLBACK=1`은 같은 seed/검증 로직을 실행한 뒤 트랜잭션을 rollback하므로 staging rehearsal에 사용할 수 있다.
+
+```bash
+OP_BASE_URL=http://localhost:8087 \
+OP_E2E_API_TOKEN="$OP_API_KEY" \
+OP_VALIDATE_PROJECT_IDENTIFIER=PROJ6 \
+node scripts/e2e/op_taxonomy_validate_contract.js
+```
+
+검증 항목:
+
+- PROJ6 workflow taxonomy codes 전체는 HTTP 200, `valid=true`, `nodeKind=wp_section`
+- 누락된 `taxonomyCode`는 HTTP 422, `taxonomyCode is required`
+- 알 수 없는 `taxonomyCode`는 HTTP 422, `taxonomyCode is unknown`
+
+PROJ6 legacy seed includes the RA section codes used by `ra-request-to-op_v6`: `ra.common.eudamed_product_registration`, `ra.misc`, `ra.overseas_registration_followup`, `ra.project_certification.retrofit_hnx_r1`, `ra.regulatory_maintenance`, and `ra.regulatory_response`. `OP_VALIDATE_TAXONOMY_CODES=code1,code2` or `OP_VALIDATE_TAXONOMY_CODE=code1` can override the default all-code list for focused checks.
+
 ---
 
 ## 빌드
@@ -167,7 +201,7 @@ curl -u "apikey:${OP_API_KEY}" -H "Content-Type: application/json" \
 레포 루트에서 실행:
 
 ```bash
-OP_VERSION=17.5.0 ABYZ_VERSION=0.2.24 ./custom-openproject/build.sh
+OP_VERSION=17.5.0 ABYZ_VERSION=0.2.34 ./custom-openproject/build.sh
 ```
 
 **빌드 동작:**
@@ -191,7 +225,7 @@ OP_VERSION=17.5.0 ABYZ_VERSION=0.2.24 ./custom-openproject/build.sh
 ```bash
 # 런타임 스택 레포에서 실행
 cd ~/workspace/openproject-taxonomy-stack
-OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.24 \
+OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.34 \
 docker compose -p openproject-taxonomy up -d
 ```
 

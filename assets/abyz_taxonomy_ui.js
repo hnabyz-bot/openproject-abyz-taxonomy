@@ -714,8 +714,13 @@
   }
 
   function injectWpDragHandle(wpRow, sectionCode) {
-    if (wpRow.querySelector(".abyz-drag-handle")) {
-      return;
+    var existing = wpRow.querySelector(".abyz-drag-handle");
+    if (existing) {
+      // Re-inject if sectionCode changed (e.g. unassigned WP moved into a section)
+      if (existing.dataset.abyzSectionCode === (sectionCode || "")) {
+        return;
+      }
+      existing.remove();
     }
     var firstCell = wpRow.querySelector("td");
     if (!firstCell) {
@@ -723,9 +728,18 @@
     }
     var handle = document.createElement("span");
     handle.className = "abyz-drag-handle";
+    handle.dataset.abyzSectionCode = sectionCode || "";
     handle.setAttribute("draggable", "true");
     handle.setAttribute("title", "드래그하여 다른 섹션으로 이동");
-    handle.innerHTML = "⠿";
+    handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
+
+    // Stop CDK _pointerDown on <tr> from starting its pointer-based drag tracking.
+    // CDK registers mousedown on <tr> (bubble phase). Without this, CDK starts
+    // its pointer drag from mousedown even though we later stop the dragstart bubble.
+    // CDK's pointer drag would then create "새로운 수동 정렬 쿼리" on drop.
+    handle.addEventListener("mousedown", function (e) {
+      e.stopPropagation();
+    });
 
     handle.addEventListener("dragstart", function (e) {
       var wpId = getWpIdFromRow(wpRow);
@@ -741,7 +755,8 @@
       e.dataTransfer.setData("text/plain", "abyz-wp-drag");
       wpRow.classList.add("abyz-dragging");
       Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
-        if (r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
+        // When sectionCode is null (unassigned WP), all sections are valid drop targets
+        if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
           r.classList.add("abyz-drop-zone");
         }
       });
@@ -771,7 +786,12 @@
     handle.className = "abyz-drag-handle";
     handle.setAttribute("draggable", "true");
     handle.setAttribute("title", "드래그하여 다른 타이틀로 이동");
-    handle.innerHTML = "⠿";
+    handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
+
+    // Same as WP handle: stop CDK _pointerDown on <tr> from starting pointer drag.
+    handle.addEventListener("mousedown", function (e) {
+      e.stopPropagation();
+    });
 
     handle.addEventListener("dragstart", function (e) {
       var identifier = getProjectIdentifierFromRow(projectRow);
@@ -961,6 +981,7 @@
     });
 
     var rowsById = workPackageRowMap(tbody);
+
     var colspan = tableColspan(table, 6);
     var realRows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
     var orderedRows = [];
@@ -988,6 +1009,14 @@
 
     realRows.forEach(function (row) {
       if (assignedRows.indexOf(row) === -1) {
+        // Skip rows without a WP link — these are Angular mid-render placeholders
+        // that have not yet received their <a href> content. Including them here
+        // would place them after the last section header (TC-055).
+        // They will be picked up on the next refresh cycle once Angular finishes.
+        if (!row.querySelector('a[href*="/work_packages/"]')) { return; }
+        // Unassigned WPs (created via OP's native UI) also get a drag handle
+        // so they can be moved into any section. sectionCode=null means "no section".
+        injectWpDragHandle(row, null);
         orderedRows.push(row);
       }
     });
@@ -996,7 +1025,23 @@
       tbody.appendChild(row);
     });
 
-    table.dataset.abyzTaxonomySignature = signature;
+    // Store post-render expected signature so Angular CD's removal of section rows
+    // triggers a mismatch → re-render on next refresh cycle.
+    // Using pre-render signature caused a stuck state: OP removes section rows →
+    // DOM matches pre-render sig → SKIP → section rows never restored.
+    var postRowSigs = orderedRows.map(function (row) {
+      var code = row.getAttribute("data-abyz-taxonomy-code");
+      if (code !== null) { return "s:" + code; }
+      var link = row.querySelector('a[href*="/work_packages/"]');
+      var m = link && link.getAttribute("href").match(/\/work_packages\/(\d+)/);
+      return m ? "w:" + m[1] : null;
+    }).filter(Boolean);
+    var postSections = wpSectionEntries()
+      .filter(function (e) { return e.project && e.project.identifier === projectIdentifier; })
+      .map(function (e) {
+        return e.section.code + ":" + (e.workPackages || []).map(function (wp) { return wp.id; }).join(",");
+      });
+    table.dataset.abyzTaxonomySignature = postRowSigs.join("|") + "::" + postSections.join("|");
     renderGanttSectionRows(projectIdentifier);
   }
 

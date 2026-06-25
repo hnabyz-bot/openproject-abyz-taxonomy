@@ -373,14 +373,20 @@
 
 /* Drag & Drop */
 .abyz-drag-handle {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   cursor: grab;
-  color: #aaa;
-  font-size: 14px;
-  margin-right: 6px;
+  color: #4a90d9;
+  margin-right: 12px;
   user-select: none;
   vertical-align: middle;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+tr:hover .abyz-drag-handle {
+  opacity: 1;
 }
 
 .abyz-drag-handle:active {

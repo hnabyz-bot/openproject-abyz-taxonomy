@@ -1,5 +1,69 @@
 # Changelog
 
+## [0.2.34] — 2026-06-25
+
+### Fixed
+
+- **TC-055 근본 수정 — Angular mid-render race condition**: 새 WP 섹션이 알파벳 마지막 위치에 추가될 때 기존 마지막 섹션의 WP들이 신규 섹션 아래로 이동하는 버그를 근본적으로 수정했다.
+  - 원인: Angular CD의 WP 행 재렌더 mid-render 구간에서 `renderWpSectionRows()`가 실행될 때 `<a href="/work_packages/N">` 링크가 아직 없는 행을 `workPackageRowMap()`이 인식하지 못해 미할당 풀로 오인, 마지막 섹션 이후에 배치됨
+  - 수정: `realRows.forEach`에서 WP 링크(`a[href*="/work_packages/"]`)가 없는 행을 건너뜀. Angular 렌더 완료 후 다음 refresh 사이클(250ms debounce)에서 올바르게 처리됨
+  - 0.2.29 수정(postRowSigs)은 Angular CD 재렌더 복원 문제를 해결했으나, mid-render 링크 누락 경쟁 조건은 별개 경로로 남아있었음
+
+---
+
+## [0.2.33] — 2026-06-25
+
+### Fixed (reverted — wrong diagnosis)
+
+- TC-055 wrong fix: 미할당 WP를 섹션 앞에 배치하는 `sectionBlocks` 접근을 시도했으나 TC-055 시나리오(할당된 WP)와 무관한 잘못된 진단으로 reverted
+- 소스는 0.2.32 동등 코드로 복원됨; 0.2.33 이미지는 할당된 WP만 있는 경우 0.2.32와 동일하게 동작
+
+---
+
+## [0.2.32] — 2026-06-24
+
+### Fixed
+
+- `/api/v3/abyz_taxonomy/validate`는 read-only RA workflow contract endpoint이므로 인증은 요구하되 admin 권한은 요구하지 않도록 조정했다.
+- 운영 rollout helper가 parent shell의 stale `OP_IMAGE` 값을 Docker Compose에 전달해 잘못된 image로 재기동하는 회귀를 방지했다.
+
+### Added
+
+- production image audit이 validate endpoint가 admin gate 뒤에 묶이는 회귀를 검출하도록 강화했다.
+
+---
+
+## [0.2.31] — 2026-06-24
+
+### Fixed
+
+- `projectIdentifier` lookup을 case-insensitive 공통 helper로 정리해 `validate`, section 생성, mutating taxonomy path가 같은 lookup 계약을 사용한다.
+- production 후보 이미지에서 WP section UI debug 로그(`ABYZ-DEBUG`)를 제거했다.
+
+### Added
+
+- `/api/v3/abyz_taxonomy/validate` E2E contract script에 alternate-case `projectIdentifier` 검증을 추가했다.
+- `ra-request-to-op_v6` rollout audit이 image tag/label 일치, image 내부 lookup helper, exact lookup 회귀, UI debug log 포함 여부를 검증할 수 있도록 production gate를 강화했다.
+
+---
+
+## [0.2.29] — 2026-06-24
+
+### Fixed
+
+- **TC-055 버그 수정**: 신규 WP 섹션이 알파벳 정렬 마지막 위치에 추가될 때 기존 마지막 섹션의 WP가 신규 섹션 하위로 이동되어 보이는 버그 수정
+  - 원인: `renderWpSectionRows`에서 `abyzTaxonomySignature`를 pre-render DOM 상태로 저장하여, Angular CD가 section rows 제거 시 signature가 일치 → SKIP → section rows 영구 복원 불가
+  - 수정: orderedRows 기반 post-render 예상 signature를 저장 → section rows 제거 시 mismatch → 재렌더 → 올바른 순서 복원
+
+### Added
+
+- DnD(드래그 앤 드롭) WP 섹션 간 이동 기능 (`data-abyz-drag-handle`, `draggable="true"`)
+- 섹션/타이틀 행에 툴팁 ⓘ 아이콘 추가 (`data-tooltip`, `.abyz-info-icon`)
+- HTML5 DnD UI 검증 E2E 테스트 (TC-057, TC-058)
+- 신규 기능 E2E 테스트 스위트 (TC-053 툴팁, TC-055 WP 섹션 버그픽스, TC-056 프로젝트 이동)
+
+---
+
 ## [0.2.24] — 2026-06-24
 
 ### Fixed
@@ -53,4 +117,3 @@
 ---
 
 _변경 이력은 [Conventional Commits](https://www.conventionalcommits.org/) 규칙을 따릅니다._
-
