@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **openproject-abyz-taxonomy** is an OpenProject plugin that adds display-only title/section nodes to Project lists and Work Package tables.
 
-- gem: `openproject-op-plugin` | version tracks `OP_VERSION-ABYZ_VERSION` (e.g. `17.5.0-0.2.31`)
+- gem: `openproject-op-plugin` | version tracks `OP_VERSION-ABYZ_VERSION` (e.g. `17.5.0-0.2.34`)
 - Architecture: Rails Engine + Docker custom image build + versioned OP source patches
 - Target: OpenProject 17.5.x+
 
@@ -68,7 +68,7 @@ openproject-abyz-taxonomy/
 
 ```bash
 # Build dev image
-OP_VERSION=17.5.0 ABYZ_VERSION=0.2.31 ./custom-openproject/build.sh
+OP_VERSION=17.5.0 ABYZ_VERSION=0.2.34 ./custom-openproject/build.sh
 
 # Start dev instance (runtime stack lives in a separate repo)
 cd ~/workspace/openproject-taxonomy-stack

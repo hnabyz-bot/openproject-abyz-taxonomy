@@ -1009,6 +1009,11 @@
 
     realRows.forEach(function (row) {
       if (assignedRows.indexOf(row) === -1) {
+        // Skip rows without a WP link — these are Angular mid-render placeholders
+        // that have not yet received their <a href> content. Including them here
+        // would place them after the last section header (TC-055).
+        // They will be picked up on the next refresh cycle once Angular finishes.
+        if (!row.querySelector('a[href*="/work_packages/"]')) { return; }
         // Unassigned WPs (created via OP's native UI) also get a drag handle
         // so they can be moved into any section. sectionCode=null means "no section".
         injectWpDragHandle(row, null);
