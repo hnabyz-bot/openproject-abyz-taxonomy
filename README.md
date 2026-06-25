@@ -36,17 +36,18 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 2026-06-25 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.36
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.37
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
 
-**0.2.37 사이드바 "모든 프로젝트" 드롭다운 프로젝트 이동 (#4):**
+**0.2.37 프로젝트 드래그 이동 (#4) — /projects 목록이 주 경로, 사이드바는 동기화:**
 
-- 좌측 사이드바 "모든 프로젝트" 드롭다운에서 프로젝트를 다른 타이틀로 끌어 이동할 수 있다. (이전에는 타이틀 reorder만 가능했고 프로젝트 이동은 드래그 핈들 미주입으로 불가했다)
-- 전수 매트릭스 검증(`scripts/e2e/op_taxonomy_drag_full_matrix_e2e.js`): 프로젝트 목록/사이드바 드롭다운/WP 테이블의 모든 드래그 이동 케이스(타이틀 reorder, 프로젝트 이동, 섹션 reorder, WP 이동)를 진짜 마우스 DnD + DB 변경으로 검증한다.
+- **주 정렬 경로 = `/projects` 전체 프로젝트 목록**(OP 네이티브 테이블, WP 테이블과 동일 메커니즘). 프로젝트를 다른 타이틀 행으로 끌면 `move_project`로 DB가 바뀌고, 좌측 사이드바 "모든 프로젝트" 드롭다운에도 자동 반영된다. 검증: `scripts/e2e/op_taxonomy_project_move_sidebar_sync_e2e.js`(진짜 마우스 + DB + 사이드바 동기화 삼중 확증).
+- **사이드바 "모든 프로젝트" 드롭다운 제한**: 헤더 project-select popover가 Angular 컴포넌트라, 커스텀 생성한 **타이틀 행에 정확히 놓아야만** 프로젝트 이동이 잡힌다(좁은 drop zone). 프로젝트 li나 빈 공간에는 Angular가 이벤트를 소비해 drop이 발생하지 않는다. 타이틀 reorder(순서 변경)는 사이드바에서도 가능하다.
+- 전수 매트릭스 검증(`scripts/e2e/op_taxonomy_drag_full_matrix_e2e.js`): 프로젝트 목록/사이드바 타이틀/WP 테이블의 드래그 이동 케이스를 진짜 마우스 DnD + DB 변경으로 검증한다.
 
 **0.2.35 드래그 앤 드롭 노드 reorder (진짜 마우스 e2e 검증 완료):**
 

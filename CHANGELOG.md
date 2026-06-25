@@ -8,6 +8,8 @@
   - 신규 함수 `injectProjectSelectDragHandle` + `addProjectSelectTitleDropHandlers` (사이드바 `<li>` 구조 맞춤, 목록용 tr 기반 함수와 별개)
   - 기존 `PATCH /abyz_taxonomy/ui/assignments/move_project` 재사용 — 신규 API 불필요
   - 전수 재검증(진짜 마우스 DnD + DB 변경 + 스크린샷 비전)으로 6종 케이스(A1/A2/E1/E2/B/D) 전부 PASS 확증
+  - **사이드바 드롭다운 제한**: 헤더 project-select popover(Angular) 구조상 커스텀 타이틀 행에만 drop이 잡히고, 프로젝트 li/빈 공간은 Angular가 이벤트를 소비해 drop 미발생. **프로젝트 이동의 주 경로는 `/projects` 전체 목록**(OP 네이티브 테이블)이며, 이동 즉시 사이드바에 동기화된다. (`scripts/e2e/op_taxonomy_project_move_sidebar_sync_e2e.js`로 확증)
+  - **빌드/배포 교훈**: 코드를 빌드해도 `ABYZ_TAXONOMY_ASSET_VERSION`을 올리지 않으면 브라우저가 예전 JS를 캐시해 새 코드가 안 먹는다(합성 이벤트 headless 검증은 통과하지만 실제 브라우저는 구버전). 빌드 시 asset version을 반드시 함께 올릴 것.
 
 ### Added
 
