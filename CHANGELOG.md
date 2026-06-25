@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.2.34] — 2026-06-25
+
+### Fixed
+
+- **TC-055 근본 수정 — Angular mid-render race condition**: 새 WP 섹션이 알파벳 마지막 위치에 추가될 때 기존 마지막 섹션의 WP들이 신규 섹션 아래로 이동하는 버그를 근본적으로 수정했다.
+  - 원인: Angular CD의 WP 행 재렌더 mid-render 구간에서 `renderWpSectionRows()`가 실행될 때 `<a href="/work_packages/N">` 링크가 아직 없는 행을 `workPackageRowMap()`이 인식하지 못해 미할당 풀로 오인, 마지막 섹션 이후에 배치됨
+  - 수정: `realRows.forEach`에서 WP 링크(`a[href*="/work_packages/"]`)가 없는 행을 건너뜀. Angular 렌더 완료 후 다음 refresh 사이클(250ms debounce)에서 올바르게 처리됨
+  - 0.2.29 수정(postRowSigs)은 Angular CD 재렌더 복원 문제를 해결했으나, mid-render 링크 누락 경쟁 조건은 별개 경로로 남아있었음
+
+---
+
+## [0.2.33] — 2026-06-25
+
+### Fixed (reverted — wrong diagnosis)
+
+- TC-055 wrong fix: 미할당 WP를 섹션 앞에 배치하는 `sectionBlocks` 접근을 시도했으나 TC-055 시나리오(할당된 WP)와 무관한 잘못된 진단으로 reverted
+- 소스는 0.2.32 동등 코드로 복원됨; 0.2.33 이미지는 할당된 WP만 있는 경우 0.2.32와 동일하게 동작
+
+---
+
+## [0.2.32] — 2026-06-24
+
+### Fixed
+
+- `/api/v3/abyz_taxonomy/validate`는 read-only RA workflow contract endpoint이므로 인증은 요구하되 admin 권한은 요구하지 않도록 조정했다.
+- 운영 rollout helper가 parent shell의 stale `OP_IMAGE` 값을 Docker Compose에 전달해 잘못된 image로 재기동하는 회귀를 방지했다.
+
+### Added
+
+- production image audit이 validate endpoint가 admin gate 뒤에 묶이는 회귀를 검출하도록 강화했다.
+
+---
+
 ## [0.2.31] — 2026-06-24
 
 ### Fixed

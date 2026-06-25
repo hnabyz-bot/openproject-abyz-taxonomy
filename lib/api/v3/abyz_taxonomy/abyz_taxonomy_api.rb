@@ -16,11 +16,12 @@ module API
 
         before do
           authenticate
-          authorize_admin
         end
 
         resources :abyz_taxonomy do
           get do
+            authorize_admin
+
             {
               _type: "AbyzTaxonomyCollection",
               nodes: ::AbyzTaxonomy::Node.active.ordered.map { |node| ::AbyzTaxonomy::TaxonomyService.serialize_node(node) }
@@ -28,6 +29,8 @@ module API
           end
 
           get :tree do
+            authorize_admin
+
             {
               _type: "AbyzTaxonomyTree",
               **::AbyzTaxonomy::TaxonomyService.tree
@@ -35,6 +38,8 @@ module API
           end
 
           post :titles do
+            authorize_admin
+
             title = ::AbyzTaxonomy::TaxonomyService.create_project_title!(request_payload)
             status 201
 
@@ -49,6 +54,8 @@ module API
           end
 
           post :wp_sections do
+            authorize_admin
+
             section = ::AbyzTaxonomy::TaxonomyService.create_wp_section!(request_payload)
             status 201
 
@@ -63,6 +70,8 @@ module API
           end
 
           post :projects do
+            authorize_admin
+
             project = ::AbyzTaxonomy::TaxonomyService.create_project_under_title!(request_payload, user: current_user)
             status 201
 
@@ -77,6 +86,8 @@ module API
           end
 
           post :project_assignments do
+            authorize_admin
+
             payload = request_payload
             assignment = ::AbyzTaxonomy::TaxonomyService.assign_project_to_title!(
               title_code: ::AbyzTaxonomy::TaxonomyService.require_value(payload, "titleCode", "title_code"),
@@ -97,6 +108,8 @@ module API
           end
 
           post :work_packages do
+            authorize_admin
+
             work_package = ::AbyzTaxonomy::TaxonomyService.create_work_package_under_section!(request_payload, user: current_user)
             status 201
 
@@ -111,6 +124,8 @@ module API
           end
 
           post :work_package_assignments do
+            authorize_admin
+
             payload = request_payload
             assignment = ::AbyzTaxonomy::TaxonomyService.assign_work_package_to_section!(
               section_code: ::AbyzTaxonomy::TaxonomyService.require_value(payload, "sectionCode", "section_code"),
@@ -140,6 +155,8 @@ module API
           namespace :nodes do
             route_param :code, requirements: { code: /[^\/]+/ }, type: String do
               patch do
+                authorize_admin
+
                 node = ::AbyzTaxonomy::TaxonomyService.update_node!(params[:code], request_payload)
 
                 {
@@ -153,6 +170,8 @@ module API
               end
 
               delete do
+                authorize_admin
+
                 node = ::AbyzTaxonomy::TaxonomyService.delete_node!(params[:code])
 
                 {
