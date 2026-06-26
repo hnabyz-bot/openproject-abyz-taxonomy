@@ -127,6 +127,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 > **[HARD] UI 정렬/레이아웃 검증은 픽셀 좌표로**: CSS 속성값(`text-align`, `justify-content`)만 보고 "적용됐다"고 보고하지 말 것. flex/grid 레이아웃이 요소를 의도치 않은 위치에 배치할 수 있다. 반드시 `getBoundingClientRect()`로 **실제 렌더링된 픽셀 좌표(bbox)** 를 측정하고, 스크린샷 비전으로 시각 확인할 것. (교훈: `text-align: left`인데 flex `space-between`이 label을 중앙에 놓아 사용자에게 중앙 정렬로 보인 사례 — labelLeft 좌표 측정 전까지 못 잡음)
 
+> **[HARD] CSS 변경 시 전체 레이아웃 회귀 검증**: font-weight, text-align, 들여쓰기(padding-left/margin-left/hierarchy indent), justify — 변경 대상 속성뿐 아니라 **인접 레이아웃 속성까지 Playwright computed style로 전부 측정**할 것. 한 속성만 확인하고 완료 보고하면 들여쓰기 등 사이드이펙트를 놓친다.
+
 ## MoAI Workflow
 
 ```bash
