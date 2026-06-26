@@ -108,7 +108,10 @@ module API
           end
 
           post :work_packages do
-            authorize_admin
+            # WP 생성을 인증된 사용자(자동화 포함)에게 허용.
+            # 실제 권한 제어는 TaxonomyService -> WorkPackages::CreateService 가
+            # 대상 프로젝트의 :add_work_packages 권한으로 수행한다 (admin 게이트 제거).
+            authorize_logged_in
 
             work_package = ::AbyzTaxonomy::TaxonomyService.create_work_package_under_section!(request_payload, user: current_user)
             status 201
