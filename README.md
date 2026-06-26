@@ -33,15 +33,22 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 
 ## 현재 개발 상태
 
-2026-06-25 기준 격리 개발 인스턴스:
+2026-06-26 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.42
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.45
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.45 하이어라키 들여쓰기 (portfolio → program → title → project) (#9):**
+
+- 타이틀 3종을 `data-abyz-taxonomy-type`(portfolio/program/title) 속성으로 구분하고, `.abyz-taxonomy-row-inner`의 `padding-left`를 0 / 2rem / 4rem으로 단계 적용해 시각적 계층을 표현한다.
+- 프로젝트 행은 부모 타이틀 타입을 `data-abyz-parent-type`로 표시하고, `td.hierarchy` 셀(보이는 display-link가 위치한 열)의 `padding-left`를 2rem(portfolio 하위) / 4rem(program) / 6rem(title)로 적용한다. 프로젝트명은 항상 소속 타이틀보다 한 단계 아래에 들여쓰기된다.
+- **검증**: 진짜 마우스 Playwright로 `getBoundingClientRect()` 실측 — 타이틀 nameX 346/378/410(32px=2rem 단계), 프로젝트 dispX 398(portfolio 하위)/462(title 하위)로 부모별 64px 차이 명확히 구분. 스크린샷 비전 "프로젝트가 부모보다 한 단계 깊이, 깔끔한 트리" 확증. 사용자 최종 확인 완료.
+- **⚠️ 타이틀 계층 드래그 이동(move_title)은 미구현**: `PATCH /abyz_taxonomy/ui/assignments/move_title`(부모 parent_id 변경) 라우트/컨트롤러/서비스/JS 드롭 핸들러 코드는 포함되어 있으나, 타이틀 행에 reorder 드롭 핸들러와 계층 이동 드롭 핸들러가 동시에 붙어 **드롭 시 reorder_node가 API를 선점**해 parent_id가 변경되지 않는다(네이티브 DnD dragstart/dragover/drop 이벤트가 모두 발생해도 reorder만 호출됨). "재정렬 vs 부모 변경"을 구분하는 UX 설계가 필요해 후속 이슈로 분리됨. 현재 타이틀 드래그 = reorder(순서 변경)만 동작.
 
 **0.2.42 타이틀 행 좌측 사이드 정렬 (#6):**
 
@@ -112,6 +119,10 @@ POST   /abyz_taxonomy/ui/project_titles
 POST   /abyz_taxonomy/ui/projects
 POST   /abyz_taxonomy/ui/wp_sections
 POST   /abyz_taxonomy/ui/work_packages
+PATCH  /abyz_taxonomy/ui/assignments/move_wp          # WP를 다른 섹션으로 이동
+PATCH  /abyz_taxonomy/ui/assignments/move_project     # 프로젝트를 다른 타이틀로 이동
+PATCH  /abyz_taxonomy/ui/assignments/reorder_node     # 타이틀/섹션 순서 재정렬(beforeCode 기준)
+PATCH  /abyz_taxonomy/ui/assignments/move_title       # 타이틀 부모(parent_id) 변경 — ⚠️ 0.2.45 현재 미구현(reorder가 선점)
 GET    /abyz_taxonomy/ui/nodes/:code/settings/general
 PATCH  /abyz_taxonomy/ui/nodes/:code/settings/general
 PATCH  /abyz_taxonomy/ui/nodes/:code

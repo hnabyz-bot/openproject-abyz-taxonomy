@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.45] — 2026-06-26
+
+### Added — 하이어라키 들여쓰기 (#9)
+
+- **타이틀 3종 계층 들여쓰기**: `buildProjectTitleRow`가 `data-abyz-taxonomy-type`(portfolio/program/title) 속성을 주입하고, CSS가 `.abyz-taxonomy-row-inner { padding-left }`를 0 / 2rem / 4rem으로 적용. portfolio → program → title 시각적 계층 표현.
+- **프로젝트 행 부모 타입별 들여쓰기**: `renderProjectTitleRows`가 각 프로젝트 행에 `data-abyz-parent-type`을 설정하고 `td.hierarchy`(display-link가 위치한 열)의 `padding-left`를 부모 타입별 2rem(portfolio)/4rem(program)/6rem(title)로 적용. 프로젝트명은 항상 소속 타이틀보다 한 단계 아래.
+- **타이틀 계층 이동(move_title) 코드 추가(미구현)**: `PATCH /abyz_taxonomy/ui/assignments/move_title` 라우트 + `UiController#move_title` + `TaxonomyService.move_title_to_parent!`(parent_id 변경) + JS `addTitleHierarchyDropHandlers`. **단, 타이틀 행에 reorder 드롭 핸들러와 동시에 붙어 드롭 시 reorder_node가 API를 선점 → 실동작 안 함(후속 과제)**.
+
+### 검증
+
+- 진짜 마우스 Playwright(시스템 chromium, `getBoundingClientRect()` 실측) — 타이틀 nameX 346/378/410(32px=2rem 단계), 프로젝트 dispX 398(portfolio 하위)/462(title 하위). 스크린샷 비전 "프로젝트가 부모보다 한 단계 깊이" 확증. 사용자 최종 확인 완료.
+- move_title: 네이티브 DnD(dragstart/dragover/drop 발생)에도 `reorder_node`만 호출되어 parent_id 미변경 → 미구현으로 확정, 후속 이슈로 분리.
+
+### [교훈] 드래그 핸들러 충돌 설계
+
+- 하나의 요소(타이틀 행)에 reorder 드롭 핸들러와 reparent 드롭 핸들러를 동시에 붙이면, 드롭 이벤트에서 한쪽 API가 먼저 실행되어 다른 쪽이 의도대로 동작하지 않는다. "재정렬"과 "부모 변경"은 사용자 제스처(예: 드롭 영역 분리, modifier key)로 명시적으로 구분하는 UX 설계가 선행되어야 한다.
+
+### 참고
+
+- 0.2.43 / 0.2.44는 플러그인 코드 변경 없이 배포/OP 설정(`Setting.per_page` 페이지네이션 비활성화 등)만 포함된 이미지 버전.
+
+---
+
 ## [0.2.42] — 2026-06-26
 
 ### Fixed

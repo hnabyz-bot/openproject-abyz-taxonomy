@@ -215,6 +215,22 @@ module AbyzTaxonomy
       end
     end
 
+    # @MX:NOTE: 타이틀 계층 이동 — parent_id 변경 (포트폴리오/프로그램/타이틀 부모 설정) (#9)
+    def move_title_to_parent!(title_code:, to_parent_code:)
+      title = find_project_title!(title_code)
+
+      if to_parent_code.blank?
+        title.update!(parent_id: nil)
+        return title
+      end
+
+      parent = find_project_title!(to_parent_code)
+      raise TaxonomyError, "Cannot set self as parent" if parent.id == title.id
+
+      title.update!(parent_id: parent.id)
+      title
+    end
+
     def reorder_node!(code, before_code:)
       node = find_node!(code)
 

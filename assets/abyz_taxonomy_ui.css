@@ -453,3 +453,17 @@ tr:hover .abyz-drag-handle {
 #op-header-project-select-listbox .abyz-taxonomy-project-select-child * {
   font-weight: 400 !important;
 }
+
+/* @MX:NOTE: 하이어라키 들여쓰기 — portfolio=0, program=2rem, title=4rem, project=6rem (#9) */
+.abyz-taxonomy-project-title-row[data-abyz-taxonomy-type="portfolio"] .abyz-taxonomy-row-inner { padding-left: 0; }
+.abyz-taxonomy-project-title-row[data-abyz-taxonomy-type="program"] .abyz-taxonomy-row-inner { padding-left: 2rem; }
+.abyz-taxonomy-project-title-row[data-abyz-taxonomy-type="title"] .abyz-taxonomy-row-inner { padding-left: 4rem; }
+.abyz-taxonomy-project-child-row .abyz-taxonomy-row-inner,
+.abyz-taxonomy-project-child-row td.name { padding-left: 6rem !important; }
+
+/* @MX:NOTE: 타이틀 계층 이동 drop 표시 (#9) */
+.abyz-taxonomy-project-title-row.abyz-title-drop-target .abyz-taxonomy-row-inner {
+  outline: 2px dashed #4285f4;
+  outline-offset: -2px;
+  background: rgba(66, 133, 244, 0.08);
+}

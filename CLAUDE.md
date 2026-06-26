@@ -129,6 +129,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 > **[HARD] CSS 변경 시 전체 레이아웃 회귀 검증**: font-weight, text-align, 들여쓰기(padding-left/margin-left/hierarchy indent), justify — 변경 대상 속성뿐 아니라 **인접 레이아웃 속성까지 Playwright computed style로 전부 측정**할 것. 한 속성만 확인하고 완료 보고하면 들여쓰기 등 사이드이펙트를 놓친다.
 
+> **[HARD] 드래그 핸들러 충돌 — 하나의 요소에 두 drop 의도를 붙이지 말 것**: 같은 요소(예: 타이틀 행)에 reorder(순서 변경) drop 핸들러와 reparent(부모 변경, move_title) drop 핸들러를 동시에 붙이면, 단일 drop 이벤트에서 한 API가 선점 실행되어 다른 쪽이 동작하지 않는다(교훈: 0.2.45 move_title이 reorder_node에 선점당해 네이티브 DnD 이벤트가 발생해도 parent_id 미변경). "재정렬" vs "부모 변경"은 드롭 영역 분리 또는 modifier key 등 **사용자 제스처로 명시 구분**하는 UX 설계가 선행되어야 한다.
+
 ## MoAI Workflow
 
 ```bash

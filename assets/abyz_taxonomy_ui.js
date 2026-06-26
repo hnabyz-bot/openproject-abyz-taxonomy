@@ -417,6 +417,8 @@
     var row = document.createElement("tr");
     row.className = "abyz-taxonomy-project-title-row";
     row.setAttribute("data-abyz-taxonomy-code", title.code);
+    var ttype = (title.rules && title.rules.taxonomyType) || "title";
+    row.setAttribute("data-abyz-taxonomy-type", ttype);
     row.setAttribute("data-test-selector", "abyz-taxonomy-project-title-row");
     row.innerHTML = [
       '<td colspan="' + columnCount + '" class="abyz-taxonomy-title-cell">',
@@ -606,15 +608,22 @@
       addProjectTitleDropHandlers(row, entry.title.code);
       addNodeReorderDropHandlers(row, entry.title.code, "title", ".abyz-taxonomy-project-title-row, .abyz-taxonomy-project-select-title");
       injectNodeReorderHandle(row, entry.title.code, "title", ".abyz-taxonomy-row-inner");
+      addTitleHierarchyDropHandlers(row, entry.title.code);
       var projectRows = (entry.projects || []).map(function (project) {
         return rowsByIdentifier[project.identifier];
       }).filter(Boolean);
 
       orderedRows.push(row);
+      // @MX:NOTE: 부모 타이틀 타입별 프로젝트 들여쓰기 — portfolio=2rem, program=4rem, title=6rem (#9)
+      var tType = (entry.title.rules && entry.title.rules.taxonomyType) || "title";
+      var hierarchyIndent = tType === "portfolio" ? "2rem" : tType === "program" ? "4rem" : "6rem";
       projectRows.forEach(function (projectRow) {
         projectRow.classList.add("abyz-taxonomy-project-child-row");
         projectRow.setAttribute("data-abyz-display-parent", entry.title.code);
+        projectRow.setAttribute("data-abyz-parent-type", tType);
         decorateProjectChildRow(projectRow);
+        var hierTd = projectRow.querySelector("td.hierarchy");
+        if (hierTd) { hierTd.style.paddingLeft = hierarchyIndent; }
         injectProjectDragHandle(projectRow, entry.title.code);
         assignedRows.push(projectRow);
         orderedRows.push(projectRow);
@@ -636,6 +645,36 @@
     });
 
     table.dataset.abyzTaxonomySignature = signature;
+  }
+
+  // @MX:NOTE: 타이틀 계층 이동 drop — 다른 타이틀 위에 놓으면 부모(parent_id) 변경 (#9)
+  function addTitleHierarchyDropHandlers(row, titleCode) {
+    var guard = "abyzTitleHierarchyDrop";
+    if (row.dataset[guard] === "true") { return; }
+    row.dataset[guard] = "true";
+
+    row.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.code !== titleCode && (state.drag.type === "title-hierarchy" || (state.drag.hierarchyMove && state.drag.type === "title"))) {
+        e.preventDefault();
+        row.classList.add("abyz-title-drop-target");
+      }
+    });
+    row.addEventListener("dragleave", function (e) {
+      if (!row.contains(e.relatedTarget)) { row.classList.remove("abyz-title-drop-target"); }
+    });
+    row.addEventListener("drop", function (e) {
+      if (state.drag && state.drag.code !== titleCode && (state.drag.type === "title-hierarchy" || (state.drag.hierarchyMove && state.drag.type === "title"))) {
+        e.preventDefault();
+        var childCode = state.drag.code;
+        row.classList.remove("abyz-title-drop-target");
+        state.drag = null;
+        fetchJson("/abyz_taxonomy/ui/assignments/move_title", {
+          method: "PATCH",
+          body: JSON.stringify({ titleCode: childCode, toParentCode: titleCode })
+        }).then(function () { return refreshTaxonomyViews("taxonomyNode"); })
+          .catch(function (err) { window.alert(err.message); });
+      }
+    });
   }
 
   function workPackageRowMap(tbody) {
@@ -1017,6 +1056,7 @@
       e.stopImmediatePropagation();
       e.stopPropagation();
       state.drag = { type: nodeType, code: nodeCode };
+      if (nodeType === "title") { state.drag.hierarchyMove = true; }
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", "abyz-reorder-drag");
       element.classList.add("abyz-dragging");

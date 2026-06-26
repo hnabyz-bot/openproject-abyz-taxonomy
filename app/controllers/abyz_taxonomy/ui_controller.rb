@@ -158,6 +158,21 @@ module AbyzTaxonomy
       render_taxonomy_error(e)
     end
 
+    # @MX:NOTE: 타이틀 계층 이동 — 부모(parent_id) 변경 (#9)
+    def move_title
+      title_code = taxonomy_params["titleCode"].to_s.strip
+      to_parent_code = taxonomy_params["toParentCode"].to_s.strip.presence
+
+      raise TaxonomyError, "titleCode is required" if title_code.blank?
+
+      TaxonomyService.move_title_to_parent!(title_code:, to_parent_code:)
+      render json: { _type: "AbyzTaxonomyTitleMoved", ok: true }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    rescue ActiveRecord::RecordInvalid => e
+      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
+    end
+
     private
 
     def taxonomy_params
