@@ -442,3 +442,8 @@ tr:hover .abyz-drag-handle {
 .abyz-drop-insert-after.abyz-taxonomy-project-select-title .abyz-taxonomy-project-select-title-action {
   border-bottom: 3px solid #4285f4;
 }
+
+/* @MX:NOTE: 타이틀 행 label을 좌측(drag-handle 옆) 고정 — row-inner space-between 3자식이 label을 중앙에 놓는 문제 해결 (#6) */
+.abyz-taxonomy-project-title-row .abyz-taxonomy-row-label {
+  margin-right: auto;
+}
