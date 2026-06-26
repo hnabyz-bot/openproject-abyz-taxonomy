@@ -447,3 +447,9 @@ tr:hover .abyz-drag-handle {
 .abyz-taxonomy-project-title-row .abyz-taxonomy-row-label {
   margin-right: auto;
 }
+
+/* @MX:NOTE: 사이드바 드롭다운 프로젝트 항목은 active여도 bold 안 함 — 타이틀만 bold (#7) */
+#op-header-project-select-listbox .abyz-taxonomy-project-select-child,
+#op-header-project-select-listbox .abyz-taxonomy-project-select-child * {
+  font-weight: 400 !important;
+}
