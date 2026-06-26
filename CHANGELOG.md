@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.42] — 2026-06-26
+
+### Fixed
+
+- **타이틀 행 label 좌측 사이드 정렬** (#6): row-inner flex `space-between`의 3자식(drag-handle/label/actions) 중 label이 시각적으로 행 중앙에 배치되어, `text-align: left`임에도 중앙으로 보이는 문제. `.abyz-taxonomy-project-title-row .abyz-taxonomy-row-label { margin-right: auto }`로 label을 drag-handle 옆(좌측 끝)으로 고정.
+- 검증: `labelLeft` 665(중앙) → 346(행 좌측), 스크린샷 비전 "좌측 끝 정렬" 확증.
+
+### Changed
+
+- **테스트 데이터 정리** (#6): 개발용 OP에서 fixture 38개 타이틀 → 3개(sample.portfolio/program/title)만 남기고 삭제(프로젝트 40/WP 48/섹션 108/assignment 123 제거).
+
+### [교훈] UI 정렬 검증 기준 강화
+
+- CSS 속성값(`text-align`)이 아니라 **실제 렌더링된 픽셀 좌표(bbox)** 로 검증해야 flex/grid 레이아웃 문제를 잡을 수 있다. 속성값만 보고 "완료" 보고하면 flex가 요소를 중앙에 놓는 갭을 놓친다. `labelLeft` 좌표 측정 도입.
+
+---
+
 ## [0.2.37] — 2026-06-25
 
 ### Fixed

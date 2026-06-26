@@ -125,6 +125,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 > **[HARD] asset version 캐시 함정**: 코드를 빌드해도 `ABYZ_TAXONOMY_ASSET_VERSION` env를 올리지 않으면 브라우저가 예전 `?v=` JS를 캐시해 새 코드가 안 먹는다. Playwright headless는 캐시가 없어 이 함정을 잡지 못한다. 빌드 시 `ABYZ_TAXONOMY_ASSET_VERSION`을 반드시 같이 올리고, headless 검증과 실제 브라우저의 갭을 염두에 둘 것.
 
+> **[HARD] UI 정렬/레이아웃 검증은 픽셀 좌표로**: CSS 속성값(`text-align`, `justify-content`)만 보고 "적용됐다"고 보고하지 말 것. flex/grid 레이아웃이 요소를 의도치 않은 위치에 배치할 수 있다. 반드시 `getBoundingClientRect()`로 **실제 렌더링된 픽셀 좌표(bbox)** 를 측정하고, 스크린샷 비전으로 시각 확인할 것. (교훈: `text-align: left`인데 flex `space-between`이 label을 중앙에 놓아 사용자에게 중앙 정렬로 보인 사례 — labelLeft 좌표 측정 전까지 못 잡음)
+
 ## MoAI Workflow
 
 ```bash

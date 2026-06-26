@@ -36,12 +36,18 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 2026-06-25 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.37
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.42
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.42 타이틀 행 좌측 사이드 정렬 (#6):**
+
+- 타이틀 행 label이 row-inner flex `space-between`의 3자식(drag-handle/label/actions) 중 중간이라 시각적으로 행 중앙에 배치되는 문제. `text-align: left`만으로는 해결 안 됨(픽셀 좌표로 확인).
+- 해결: `.abyz-taxonomy-project-title-row .abyz-taxonomy-row-label { margin-right: auto }` — label을 drag-handle 옆(좌측 끝)으로 고정, actions만 우측 끝.
+- 검증: `labelLeft` 665(중앙) → 346(행 좌측), 비전 "좌측 끝 정렬" 확증.
 
 **0.2.37 프로젝트 드래그 이동 (#4) — /projects 목록이 주 경로, 사이드바는 동기화:**
 
