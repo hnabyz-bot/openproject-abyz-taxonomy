@@ -81,12 +81,7 @@
 }
 
 .abyz-taxonomy-project-title-row .abyz-taxonomy-title-cell {
-  text-align: center;
-}
-
-/* @MX:NOTE: 타이틀 행 텍스트 중앙 정렬 — label/menu 그룹을 행 중앙으로 (#6) */
-.abyz-taxonomy-project-title-row .abyz-taxonomy-row-inner {
-  justify-content: center;
+  text-align: left;
 }
 
 .abyz-taxonomy-project-child-row td.name.project--hierarchy {
