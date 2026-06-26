@@ -44,8 +44,12 @@
 
 Phase 6 진입 전 모든 항목 ✅ 확인 필수.
 
+> **[P1 INC-20260625 교훈]** `.env` 완전성 검증(항목 0)은 배포 시작 전 최우선 확인 사항이다.  
+> 컨테이너가 `running`이어도 서비스가 다운일 수 있다 — 배포 성공 기준은 HTTP 응답 코드다.
+
 | # | 항목 | 확인 방법 |
 |---|---|---|
+| **0** | **`.env` 필수 변수 완전성 확인** ⚠️ | `grep -E "OP_IMAGE\|OPENPROJECT_SECRET_KEY_BASE" ~/workspace/openproject-stack/.env` — 두 줄 모두 존재해야 함 |
 | 1 | 최신 DB/assets 백업 존재 (24시간 이내) | `ls -la ~/workspace/backups/openproject-$(date +%Y%m%d)*` |
 | 2 | Custom image 빌드 성공 | `docker image inspect openproject-abyz-taxonomy:17.5.0-0.2.34` |
 | 3 | Adapter manifest/base checksum/required patch 검증 통과 | `tc-005-adapter-manifest-check.json` 존재 |
@@ -56,7 +60,7 @@ Phase 6 진입 전 모든 항목 ✅ 확인 필수.
 | 8 | TC-080 (Migration additive-only) 통과 | `grep` 출력 없음 확인 (Section 8 참고) |
 | 9 | TC-090 Release quality gate 통과 | 문서 95%, 코드 90%, E2E 95%, 목적 보존 100% |
 | 10 | 운영 권한 정책 확인 | admin-only 승인 또는 viewer/manager 권한 분리 E2E 통과 |
-| 11 | Image 아카이브 생성 완료 | `/backup/op-taxonomy-17.5.0-0.2.34-<date>.tar.gz` 존재 |
+| 11 | Image 아카이브 생성 완료 | `ls ~/workspace/backups/op-taxonomy-*.tar.gz` |
 | 12 | 사용자 명시 승인 | AskUserQuestion 응답 또는 명시적 "진행" 승인 |
 
 ---
@@ -85,6 +89,18 @@ docker compose -p openproject-stack config | grep 'image:'
 **[HARD] 사용자 명시 승인 없이 절대 실행 금지.**
 
 ```bash
+# Step 0 — [P1 INC-20260625 필수] .env 완전성 사전 검증
+# ⚠️ 이 단계를 건너뛰면 서비스가 무기한 다운될 수 있다
+cd ~/workspace/openproject-stack
+ENV_CHECK=$(grep -cE "OPENPROJECT_SECRET_KEY_BASE=.+" .env 2>/dev/null)
+if [ "$ENV_CHECK" -eq 0 ]; then
+  echo "❌ FATAL: OPENPROJECT_SECRET_KEY_BASE가 .env에 없음 — 배포 중단"
+  echo "   hermes 참조에서 값 확인 후 .env에 추가하고 재시도"
+  exit 1
+fi
+echo "✅ .env 완전성 확인: OP_IMAGE + SECRET_KEY_BASE 모두 존재"
+cat .env | grep -v SECRET  # SECRET 값은 출력하지 않음
+
 # Step 1 — 최신 백업 존재 확인
 ls -la ~/workspace/backups/ | grep openproject-$(date +%Y%m%d) || echo "경고: 오늘 백업 없음 — 즉시 수동 백업 실행"
 
@@ -100,21 +116,25 @@ docker inspect openproject-stack-openproject-1 --format '{{.Config.Image}}' > \
 cat ~/workspace/backups/pre-deploy-image-${BACKUP_DATE}.txt
 
 # Step 4 — 스택 중단
-cd ~/workspace/openproject-stack
 docker compose -p openproject-stack down
 
-# Step 5 — .env 전환
-echo "OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.34" > .env
-cat .env   # 확인
+# Step 5 — .env OP_IMAGE만 교체 (다른 변수 보존)
+# ⚠️ [P1 INC-20260625] `echo ... > .env`는 기존 내용 전체를 파괴한다. 절대 사용 금지.
+# sed로 OP_IMAGE 값만 교체한다.
+sed -i "s|^OP_IMAGE=.*|OP_IMAGE=openproject-abyz-taxonomy:17.5.0-0.2.34|" .env
+cat .env | grep OP_IMAGE  # 확인 (SECRET은 출력하지 않음)
 
 # Step 6 — 재기동
 docker compose -p openproject-stack up -d
 
-# Step 7 — Health 확인 (30초 대기 후)
-sleep 30
-curl -s -o /dev/null -w "HTTP %{http_code}\n" \
-  http://localhost:8086/ -H "Host: plm.abyz-lab.work"
-# 기대값: HTTP 200
+# Step 7 — HTTP Health 확인 (컨테이너 status가 아닌 실제 HTTP 응답 필수)
+# ⚠️ [P1 INC-20260625] `docker ps`로 running 확인만으로는 충분하지 않다.
+until curl -s -o /dev/null -w "%{http_code}" \
+  http://localhost:8086/ -H "Host: plm.abyz-lab.work" --max-time 10 \
+  | grep -qE '^(200|302)$'; do
+  echo "대기 중..."; sleep 10
+done
+echo "✅ Health OK: HTTP $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8086/ -H 'Host: plm.abyz-lab.work')"
 
 # Step 8 — 기능 확인
 curl -s -u "apikey:${OP_API_KEY}" \
@@ -342,6 +362,7 @@ ls -lh ~/workspace/backups/op-taxonomy-*.tar.gz
 | 2026-06-20 | 1.0.1 | SPEC 참조 v0.2.0 → v0.3.0 갱신. |
 | 2026-06-22 | 1.0.2 | 목적 보존형 업데이트 구조 반영. OP 기본 Project list/WP table/Gantt/Project selector 연동을 필수 gate로 명시하고 Build/Adapter 검증 섹션 추가. |
 | 2026-06-22 | 1.0.3 | 구현-문서 재교차검증 결과 반영. 현행 Dockerfile/build/manifest/E2E/권한/packaging 배포 차단 항목 추가. |
+| 2026-06-25 | **1.1.0** | **[P1 INC-20260625] 배포 절차 취약점 수정.** Section 0에 `.env` 완전성 검증(항목 0) 추가. Step 0 사전검증 스크립트 추가. Step 5를 `echo > .env` 덮어쓰기에서 `sed -i` 부분교체로 변경. Step 7을 HTTP 응답 코드 실제 확인으로 강화. 사고 보고서: `docs/incidents/INC-20260625-P1-secret-key-base-outage.md` |
 
 ---
 

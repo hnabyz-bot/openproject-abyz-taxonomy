@@ -119,6 +119,14 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 ---
 
+> **[HARD] 진짜 마우스 e2e 필수**: DnD/클릭 등 UI 동작의 최종 검증은 합성 `dispatchEvent`가 아닌 `page.mouse` 수동 제어(mousedown→mousemove steps→mouseup) 진짜 마우스 이벤트로 수행한다. 드래그 중 인디케이터·드롭 후 결과를 스크린샷으로 시각 확인하고 DB(API) 변경으로 영속성을 이중 검증한다. (교훈: 합성 이벤트 PASS를 진짜 동작으로 오인한 사례 — `scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js` 참고)
+
+> **[HARD] 사이드바 popover vs /projects 주 경로**: 사이드바 "모든 프로젝트" 드롭다운(헤더 project-select popover)은 Angular 컴포넌트라 커스텀 drop이 타이틀 행에만 잡힌다. 프로젝트 이동(타이틀 간)의 주 경로는 `/projects` 전체 목록(OP 네이티브 테이블)이며, 이동 즉시 사이드바에 동기화된다. 사이드바에서 영역을 넓히려(list/프로젝트 li drop) 시도하면 Angular가 이벤트를 소비해 회귀/drop 미발생이 생기니 list 수준 핸들러는 금지.
+
+> **[HARD] asset version 캐시 함정**: 코드를 빌드해도 `ABYZ_TAXONOMY_ASSET_VERSION` env를 올리지 않으면 브라우저가 예전 `?v=` JS를 캐시해 새 코드가 안 먹는다. Playwright headless는 캐시가 없어 이 함정을 잡지 못한다. 빌드 시 `ABYZ_TAXONOMY_ASSET_VERSION`을 반드시 같이 올리고, headless 검증과 실제 브라우저의 갭을 염두에 둘 것.
+
+> **[HARD] UI 정렬/레이아웃 검증은 픽셀 좌표로**: CSS 속성값(`text-align`, `justify-content`)만 보고 "적용됐다"고 보고하지 말 것. flex/grid 레이아웃이 요소를 의도치 않은 위치에 배치할 수 있다. 반드시 `getBoundingClientRect()`로 **실제 렌더링된 픽셀 좌표(bbox)** 를 측정하고, 스크린샷 비전으로 시각 확인할 것. (교훈: `text-align: left`인데 flex `space-between`이 label을 중앙에 놓아 사용자에게 중앙 정렬로 보인 사례 — labelLeft 좌표 측정 전까지 못 잡음)
+
 ## MoAI Workflow
 
 ```bash

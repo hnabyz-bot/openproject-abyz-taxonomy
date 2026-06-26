@@ -146,6 +146,18 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
+    def reorder_node
+      code = taxonomy_params["code"].to_s.strip
+      before_code = taxonomy_params["beforeCode"].to_s.strip.presence
+
+      raise TaxonomyError, "code is required" if code.blank?
+
+      TaxonomyService.reorder_node!(code, before_code:)
+      render json: { _type: "AbyzTaxonomyReordered", ok: true }
+    rescue TaxonomyError => e
+      render_taxonomy_error(e)
+    end
+
     private
 
     def taxonomy_params

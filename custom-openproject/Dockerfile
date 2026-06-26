@@ -4,6 +4,7 @@ FROM openproject/openproject:${OP_VERSION}
 # Re-declare ARGs after FROM (ARG scope resets after each FROM)
 ARG OP_VERSION=17.5.0
 ARG ABYZ_VERSION=0.1.0
+ENV ABYZ_TAXONOMY_ASSET_VERSION=${ABYZ_VERSION}
 LABEL abyz.taxonomy.op_version="${OP_VERSION}" \
       abyz.taxonomy.version="${ABYZ_VERSION}"
 

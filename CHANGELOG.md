@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.2.42] — 2026-06-26
+
+### Fixed
+
+- **타이틀 행 label 좌측 사이드 정렬** (#6): row-inner flex `space-between`의 3자식(drag-handle/label/actions) 중 label이 시각적으로 행 중앙에 배치되어, `text-align: left`임에도 중앙으로 보이는 문제. `.abyz-taxonomy-project-title-row .abyz-taxonomy-row-label { margin-right: auto }`로 label을 drag-handle 옆(좌측 끝)으로 고정.
+- 검증: `labelLeft` 665(중앙) → 346(행 좌측), 스크린샷 비전 "좌측 끝 정렬" 확증.
+
+### Changed
+
+- **테스트 데이터 정리** (#6): 개발용 OP에서 fixture 38개 타이틀 → 3개(sample.portfolio/program/title)만 남기고 삭제(프로젝트 40/WP 48/섹션 108/assignment 123 제거).
+
+### [교훈] UI 정렬 검증 기준 강화
+
+- CSS 속성값(`text-align`)이 아니라 **실제 렌더링된 픽셀 좌표(bbox)** 로 검증해야 flex/grid 레이아웃 문제를 잡을 수 있다. 속성값만 보고 "완료" 보고하면 flex가 요소를 중앙에 놓는 갭을 놓친다. `labelLeft` 좌표 측정 도입.
+
+---
+
+## [0.2.37] — 2026-06-25
+
+### Fixed
+
+- **사이드바 "모든 프로젝트" 드롭다운에서 프로젝트 이동(타이틀 간) 지원** (#4): 사용자 실사용 피드백으로 발견된 회귀. `renderProjectSelectTaxonomyRows`가 사이드바 프로젝트 `<li>`에 드래그 핸들을 주입하지 않아 dragstart가 일어나지 않고 move_project가 호출되지 않았다.
+  - 신규 함수 `injectProjectSelectDragHandle` + `addProjectSelectTitleDropHandlers` (사이드바 `<li>` 구조 맞춤, 목록용 tr 기반 함수와 별개)
+  - 기존 `PATCH /abyz_taxonomy/ui/assignments/move_project` 재사용 — 신규 API 불필요
+  - 전수 재검증(진짜 마우스 DnD + DB 변경 + 스크린샷 비전)으로 6종 케이스(A1/A2/E1/E2/B/D) 전부 PASS 확증
+  - **사이드바 드롭다운 제한**: 헤더 project-select popover(Angular) 구조상 커스텀 타이틀 행에만 drop이 잡히고, 프로젝트 li/빈 공간은 Angular가 이벤트를 소비해 drop 미발생. **프로젝트 이동의 주 경로는 `/projects` 전체 목록**(OP 네이티브 테이블)이며, 이동 즉시 사이드바에 동기화된다. (`scripts/e2e/op_taxonomy_project_move_sidebar_sync_e2e.js`로 확증)
+  - **빌드/배포 교훈**: 코드를 빌드해도 `ABYZ_TAXONOMY_ASSET_VERSION`을 올리지 않으면 브라우저가 예전 JS를 캐시해 새 코드가 안 먹는다(합성 이벤트 headless 검증은 통과하지만 실제 브라우저는 구버전). 빌드 시 asset version을 반드시 함께 올릴 것.
+
+### Added
+
+- `scripts/e2e/op_taxonomy_drag_full_matrix_e2e.js` — 드래그 이동 전수 매트릭스 검증(모든 화면 × 모든 이동 케이스). 초기 검증이 사이드바 프로젝트 이동을 누락한 빈틈을 보완.
+
+---
+
+## [0.2.35] — 2026-06-25
+
+### Added
+
+- **드래그 앤 드롭 노드 reorder(순서 변경) 기능**: 타이틀(포트폴리오/프로그램/타이틀) 및 WP 섹션의 순서를 드래그로 수동 정렬한다. (#3)
+  - 백엔드: `PATCH /abyz_taxonomy/ui/assignments/reorder_node` (code, beforeCode) 신규 — `TaxonomyService.reorder_node!`가 형제 노드의 position을 트랜잭션으로 갱신
+  - 프론트엔드: `injectNodeReorderHandle` + `addNodeReorderDropHandlers` — 프로젝트 목록 테이블, 프로젝트 셀렉터/사이드바 "모든 프로젝트" 드롭다운, WP 테이블 섹션에 적용
+  - 드롭 위치(clientY) 기반 before/after 삽입 인디케이터 (`.abyz-drop-insert-before/after`)
+
+### Changed
+
+- **E2E 검증 방식 강화**: dispatchEvent 합성 DragEvent를 1차 스크리닝용으로만 사용하고, 최종 검증은 `page.mouse` 수동 제어(mousedown→mousemove steps→mouseup) 진짜 마우스 DnD + 스크린샷 비전 분석으로 수행한다. 진단 결과 `dragStart=1, dragOver=11, drop=1`로 실제 HTML5 DnD 이벤트 발생을 확인했고, DB position/parent 변경으로 영속성을 이중 검증했다.
+- `scripts/e2e/op_taxonomy_drag_reorder_real_e2e.js`, `scripts/e2e/diagnose_dnd_events.js` 신규 추가 — 드래그 reorder 5종(TC-A~E) 진짜 마우스 검증 및 이벤트 진단.
+
+---
+
 ## [0.2.34] — 2026-06-25
 
 ### Fixed
