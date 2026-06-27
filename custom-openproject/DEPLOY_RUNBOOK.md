@@ -19,17 +19,18 @@
 
 ---
 
-## 현재 개발용 검증 상태 (2026-06-21)
+## 현재 검증/배포 상태 (2026-06-27)
 
 | 항목 | 값 |
 |---|---|
-| 개발 image | `openproject-abyz-taxonomy:17.5.0-0.2.34` |
+| 개발 image | `openproject-abyz-taxonomy:17.5.0-0.2.45` |
 | 개발 compose project | `openproject-taxonomy` |
 | 개발 OP container | `openproject-taxonomy-openproject-taxonomy-1` |
 | 개발 access proxy | `openproject-taxonomy-access` |
 | 개발 URL | `http://localhost:8087`, `http://10.20.6.187:8087`, `http://100.110.194.101:8087` |
-| 운영 OP container | `openproject-stack-openproject-1`, `openproject/openproject:17` |
-| 운영 반영 | 미실행 |
+| 운영 OP container | `openproject-stack-openproject-1` |
+| 운영 image | `openproject-abyz-taxonomy:17.5.0-0.2.45` (2026-06-27 배포, 하이어라키 들여쓰기 #9) |
+| 운영 반영 | **완료** — plm.abyz-lab.work HTTP 302 정상, 자산 ?v=0.2.45 서빙 확인 |
 
 최종 검증:
 

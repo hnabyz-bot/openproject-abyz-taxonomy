@@ -13,6 +13,13 @@
 - 진짜 마우스 Playwright(시스템 chromium, `getBoundingClientRect()` 실측) — 타이틀 nameX 346/378/410(32px=2rem 단계), 프로젝트 dispX 398(portfolio 하위)/462(title 하위). 스크린샷 비전 "프로젝트가 부모보다 한 단계 깊이" 확증. 사용자 최종 확인 완료.
 - move_title: 네이티브 DnD(dragstart/dragover/drop 발생)에도 `reorder_node`만 호출되어 parent_id 미변경 → 미구현으로 확정, 후속 이슈로 분리.
 
+### 운영 배포 (2026-06-27)
+
+- `plm.abyz-lab.work` 운영 OP: 0.2.43 → **0.2.45** 적용 완료.
+- 절차: RUNBOOK Phase 6 최소 다운타임 — `.env` `OP_IMAGE` 만 `sed -i` 교체(INC-20260625 echo 금지 준수, sed 후 SECRET_KEY_BASE 보존·diff 1행 확인) → `docker compose up -d`(openproject 서비스만 재생성, op_assets/DB 유지).
+- 검증: 컨테이너 0.2.45 구동, plm HTTP 302 안정화, ENV `ABYZ_TAXONOMY_ASSET_VERSION=0.2.45`, 정적 JS 60,518바이트(hierarchyIndent 포함) = dev 검증본과 동일.
+- 다운타임 ~1분 44초(사용자 승인 전제). 사전 백업(.env 사본 + 0.2.43 이미지 태그 보존). 롤백 미사용(정상 동작).
+
 ### [교훈] 드래그 핸들러 충돌 설계
 
 - 하나의 요소(타이틀 행)에 reorder 드롭 핸들러와 reparent 드롭 핸들러를 동시에 붙이면, 드롭 이벤트에서 한쪽 API가 먼저 실행되어 다른 쪽이 의도대로 동작하지 않는다. "재정렬"과 "부모 변경"은 사용자 제스처(예: 드롭 영역 분리, modifier key)로 명시적으로 구분하는 UX 설계가 선행되어야 한다.

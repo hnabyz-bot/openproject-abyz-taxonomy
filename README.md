@@ -80,7 +80,7 @@ Access:    http://localhost:8087
 - taxonomy child 프로젝트 행 계층 들여쓰기 정렬 오류 수정 (`padding-left: 0`) — 프로젝트 목록 child indent 46px → 40px
 - taxonomy child 프로젝트 이름 bold 상속 제거 (`font-weight: normal`) — `cloneNode(true)` OP 스타일 상속 문제 해결
 
-운영 인스턴스(`openproject-stack-openproject-1`, `openproject/openproject:17`)는 개발 검증 중 재시작·수정 금지.
+운영 인스턴스(`openproject-stack-openproject-1`, `plm.abyz-lab.work`) — **2026-06-27 0.2.45 배포 완료**(하이어라키 들여쓰기). 배포는 RUNBOOK Phase 6 최소 다운타임 절차(`.env` OP_IMAGE 만 `sed -i` 교체 → `compose up -d`, openproject 서비스만 재생성). 운영 반영 시 사전 백업 + `sed -i`(echo 금지) + HTTP 실확인 + 롤백 Path A 대기 필수(INC-20260625 교훈).
 
 최근 검증 데이터 리셋 기준:
 
