@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.48] — 2026-06-28
+
+### Fixed — 운영 slug permalink에서 WP 행이 섹션 아래 배치 안 됨 (#14, #13 후속)
+
+- `workPackageRowMap` / `workPackageRenderSignature` / `postRowSigs`(abyz_taxonomy_ui.js)가 `getWpIdFromRow`(data-work-package-id 우선)를 재사용하도록 통일. 기존 a[href] 정규식 `/\/work_packages\/(\d+)/`이 운영 slug URL(`/work_packages/PROJ6-1/`)에서 매칭 실패해 rowsById가 빈 → renderWpSectionRows가 섹션 아래 WP 행을 배치하지 못함(섹션만 상단, WP 안 보임).
+- #13에서 getWpIdFromRow만 fix했고, 이 3곳이 같은 slug 버그로 남아있었음.
+- 검증 예정: dev Playwright slug 모킹 + 운영 실화면(WP가 섹션 아래 표시) + move_wp.
+
 ## [0.2.47] — 2026-06-28
 
 ### Fixed — unassigned WP→섹션 move_wp 운영 미동작 (slug permalink) (#13)

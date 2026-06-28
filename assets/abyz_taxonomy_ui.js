@@ -684,14 +684,10 @@
         return;
       }
 
-      var link = row.querySelector('a[href*="/work_packages/"]');
-      if (!link) {
-        return;
-      }
-
-      var match = link.getAttribute("href").match(/\/work_packages\/(\d+)/);
-      if (match) {
-        map[match[1]] = row;
+      // @MX:NOTE: getWpIdFromRow 재사용(data-work-package-id 우선) — 운영 slug permalink 대응 (#14)
+      var id = getWpIdFromRow(row);
+      if (id) {
+        map[id] = row;
       }
     });
     return map;
@@ -706,10 +702,10 @@
         rowSigs.push("s:" + code);
         return;
       }
-      var link = row.querySelector('a[href*="/work_packages/"]');
-      var match = link && link.getAttribute("href").match(/\/work_packages\/(\d+)/);
-      if (match) {
-        rowSigs.push("w:" + match[1]);
+      // @MX:NOTE: getWpIdFromRow 재사용(data-work-package-id 우선) — 운영 slug permalink 대응 (#14)
+      var sigWpId = getWpIdFromRow(row);
+      if (sigWpId) {
+        rowSigs.push("w:" + sigWpId);
       }
     });
 
@@ -1294,9 +1290,9 @@
     var postRowSigs = orderedRows.map(function (row) {
       var code = row.getAttribute("data-abyz-taxonomy-code");
       if (code !== null) { return "s:" + code; }
-      var link = row.querySelector('a[href*="/work_packages/"]');
-      var m = link && link.getAttribute("href").match(/\/work_packages\/(\d+)/);
-      return m ? "w:" + m[1] : null;
+      // @MX:NOTE: getWpIdFromRow 재사용(data-work-package-id 우선) — 운영 slug permalink 대응 (#14)
+      var postWpId = getWpIdFromRow(row);
+      return postWpId ? "w:" + postWpId : null;
     }).filter(Boolean);
     var postSections = wpSectionEntries()
       .filter(function (e) { return e.project && e.project.identifier === projectIdentifier; })
