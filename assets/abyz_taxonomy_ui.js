@@ -750,6 +750,15 @@
   }
 
   function getWpIdFromRow(row) {
+    // @MX:NOTE: data-work-package-id 속성 우선 — 운영은 WP permalink가 slug(/work_packages/PROJ6-1)라
+    // a[href] 정규식 /\/work_packages\/(\d+)/ 이 매칭되지 않아 wpId=null → dragstart 취소 → move_wp 미동작 (#13).
+    var attr = row.getAttribute("data-work-package-id");
+    if (attr) {
+      var idFromAttr = parseInt(attr, 10);
+      if (idFromAttr) {
+        return idFromAttr;
+      }
+    }
     var link = row.querySelector('a[href*="/work_packages/"]');
     if (!link) {
       return null;

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.47] — 2026-06-28
+
+### Fixed — unassigned WP→섹션 move_wp 운영 미동작 (slug permalink) (#13)
+
+- `getWpIdFromRow`(abyz_taxonomy_ui.js)가 `data-work-package-id` 속성에서 WP id를 우선 읽도록 수정. 기존 `a[href]` 정규식 `/\/work_packages\/(\d+)/`은 운영처럼 WP permalink가 slug(`/projects/PROJ6/work_packages/PROJ6-1/activity`)인 경우 매칭 실패 → wpId null → dragstart `e.preventDefault()` → 드래그 취소 → move_wp 미동작. dev는 permalink가 숫자 id(`/work_packages/330`)라 정상 동작했고, 운영만 slug라 발생.
+- `data-work-package-id` 우선 + 기존 `a[href]` 정규식 fallback 유지 → dev/운영 모두 커버.
+- 검증 예정: dev Playwright 진짜 마우스 move_wp(기본 숫자 id URL + slug URL 모킹) + DB 영속.
+
 ## [0.2.46] — 2026-06-28
 
 ### Fixed — WP 섹션 행 label 좌측 정렬 (#6 섹션 확장, #12)
