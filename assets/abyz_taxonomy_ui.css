@@ -448,6 +448,11 @@ tr:hover .abyz-drag-handle {
   margin-right: auto;
 }
 
+/* @MX:NOTE: 섹션 행 label도 동일 좌측 고정 — #6 fix를 wp_section_row로 확장. space-between이 label을 중앙에 놓는 동일 문제 해결 (#12) */
+.abyz-taxonomy-wp-section-row .abyz-taxonomy-row-label {
+  margin-right: auto;
+}
+
 /* @MX:NOTE: 사이드바 드롭다운 프로젝트 항목은 active여도 bold 안 함 — 타이틀만 bold (#7) */
 #op-header-project-select-listbox .abyz-taxonomy-project-select-child,
 #op-header-project-select-listbox .abyz-taxonomy-project-select-child * {

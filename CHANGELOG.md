@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.46] — 2026-06-28
+
+### Fixed — WP 섹션 행 label 좌측 정렬 (#6 섹션 확장, #12)
+
+- `.abyz-taxonomy-wp-section-row .abyz-taxonomy-row-label { margin-right: auto }` 추가. #6에서 타이틀 행에만 적용했던 좌측 고정을 섹션 행으로 확장. `.abyz-taxonomy-row-inner` flex `space-between`이 3자식(drag-handle/label/actions) 중 label을 시각적 중앙에 배치하던 문제 해결. 개발/운영 공통 코드 버그라 환경 무관.
+- 검증 예정: 진짜 마우스 Playwright(`getBoundingClientRect()` 실측)로 section label 좌표가 drag-handle 인접 좌측으로 이동했는지 + 인접 레이아웃(들여쓰기/액션 위치) 회귀 없는지 확인.
+
 ## [0.2.45] — 2026-06-26
 
 ### Added — 하이어라키 들여쓰기 (#9)
