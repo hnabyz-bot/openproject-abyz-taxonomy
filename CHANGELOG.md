@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.56] — 2026-06-29
+
+### Fixed — 드롭다운 항목 선택 시 API 요청 미발생 (#15)
+
+- **원인**: `<div>` 항목의 click 이벤트를 OP Angular/CDK가 소비. 서버 로그 move_wp_parent 0건 확인.
+- **수정**: 항목을 `<button type="button">` 요소로 변경(OP가 button click은 소비하지 않음) + `confirm()` 다이얼로그로 사용자 확인 후 API 호출(confirm은 브라우저 네이티브 → OP 관여 불가). 드롭다운 닫기 후 confirm → API 호출 순서로 변경하여 이벤트 간섭 원천 차단.
+
 ## [0.2.55] — 2026-06-29
 
 ### Fixed — 하위 WP(자식)에서 parent 버튼 클릭 → 드롭다운 안 됨 (CDK mousedown 소비) (#15)

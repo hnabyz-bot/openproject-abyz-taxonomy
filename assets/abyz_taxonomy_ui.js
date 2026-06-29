@@ -885,30 +885,38 @@
     dropdown.className = "abyz-parent-selector";
     dropdown.innerHTML = '<div class="abyz-parent-selector-title">부모 WP 선택</div>';
 
-    // "부모 해제" 옵션
-    var clearItem = document.createElement("div");
+    // "부모 해제" 옵션 — <button> 요소 사용(OP Angular click 소비 방지) + confirm()
+    var clearItem = document.createElement("button");
+    clearItem.type = "button";
     clearItem.className = "abyz-parent-selector-item";
     clearItem.textContent = "（부모 없음 — 최상위）";
     clearItem.addEventListener("click", function () {
+      dropdown.remove();
+      if (!confirm("부모를 해제하시겠습니까?")) { return; }
       fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
         method: "PATCH",
         body: JSON.stringify({ wpId: wpId, toParentId: "" })
-      }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
-        .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+      }).then(function () { return refreshTaxonomyViews("taxonomyNode"); })
+        .catch(function (err) { window.alert(err.message); });
     });
     dropdown.appendChild(clearItem);
 
-    // WP 목록
+    // WP 목록 — <button> 요소 사용(OP Angular click 소비 방지) + confirm()
     allWps.forEach(function (wp) {
-      var item = document.createElement("div");
+      var item = document.createElement("button");
+      item.type = "button";
       item.className = "abyz-parent-selector-item";
       item.textContent = "#" + wp.id + " " + (wp.subject || "").slice(0, 40);
       item.addEventListener("click", function () {
+        var toId = wp.id;
+        var toLabel = "#" + wp.id + " " + (wp.subject || "").slice(0, 30);
+        dropdown.remove();
+        if (!confirm("부모 WP를 " + toLabel + "(으)로 설정하시겠습니까?")) { return; }
         fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
           method: "PATCH",
-          body: JSON.stringify({ wpId: wpId, toParentId: wp.id })
-        }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
-          .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+          body: JSON.stringify({ wpId: wpId, toParentId: toId })
+        }).then(function () { return refreshTaxonomyViews("taxonomyNode"); })
+          .catch(function (err) { window.alert(err.message); });
       });
       dropdown.appendChild(item);
     });
