@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.51] — 2026-06-29
+
+### Fixed — WP parent 드래그 drop이 실제 브라우저에서 안 됨 (CDK 간섭) (#15)
+
+- **원인**: OP CDK가 WP 행(네이티브 행)의 drop 이벤트를 bubble phase에서 소비 → 플러그인 drop 핸들러 안 불림. Playwright(headless)는 CDK 간섭 없이 동작해서 200이었으나, 실제 브라우저에서는 녹색 표시(dragover)만 되고 drop이 안 됨.
+- **수정**: `addWpParentDropHandlers`의 dragover/dragleave/drop을 **capture phase**(`addEventListener(..., true)`)로 등록 → CDK보다 먼저 drop 이벤트를 선점 처리.
+- 섹션 행(플러그인 생성 행)은 CDK 간섭 없어 bubble로 충분하지만, WP 행(OP 네이티브)은 capture 필수.
+
 ## [0.2.50] — 2026-06-29
 
 ### Changed — WP parent 드래그 UX 개선: Alt 제거 + handle 항상 표시 (#15)

@@ -938,18 +938,21 @@
     }
     wpRow.dataset.abyzParentDropBound = "true";
 
+    // @MX:NOTE: capture phase(=true) 사용 — OP CDK가 WP 행의 drop 이벤트를 소비(bubble phase)하기 전에
+    // 플러그인이 drop을 선점 처리 (#15). 섹션 행은 플러그인 생성 행이라 bubble로 충분하지만,
+    // WP 행은 OP 네이티브 행이라 CDK 간섭 → capture 필수.
     wpRow.addEventListener("dragover", function (e) {
       if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
         e.preventDefault();
         wpRow.classList.add("abyz-parent-drag-over");
       }
-    });
+    }, true);
 
     wpRow.addEventListener("dragleave", function (e) {
       if (!wpRow.contains(e.relatedTarget)) {
         wpRow.classList.remove("abyz-parent-drag-over");
       }
-    });
+    }, true);
 
     wpRow.addEventListener("drop", function (e) {
       e.preventDefault();
@@ -967,7 +970,7 @@
           window.alert(err.message);
         });
       }
-    });
+    }, true);
   }
 
   function addProjectTitleDropHandlers(titleRow, titleCode) {
