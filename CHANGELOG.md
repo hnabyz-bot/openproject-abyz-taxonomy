@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.49] — 2026-06-29
+
+### Added — WP 부모/자식(parent) 드래그 설정/변경 + 들여쓰기 (#15)
+
+- **WP를 다른 WP에 Alt+드래그 → 부모(parent_id) 설정/변경**. 기본 드래그는 기존 섹션 이동(move_wp). Alt modifier로 두 의도를 UX 분리(#11 드롭 핸들러 충돌 교훈 반영).
+- 백엔드: `PATCH /abyz_taxonomy/ui/assignments/move_wp_parent` (wpId, toParentId). `set_work_package_parent!` 가 OP `WorkPackages::UpdateService` 경유로 parent 변경(권한/콜백/계약 안전). self/순환/타 프로젝트 부모 거부, toParentId 빈 값이면 부모 해제(최상위).
+- JS: `addWpParentDropHandlers`(WP 행 drop → move_wp_parent), dragstart에서 `e.altKey` 시 `state.drag.parentMode=true`로 WP 행을 drop target 활성화.
+- CSS: parent drop zone 시각 표시(녹색 outline) + 자식 WP 들여쓰기(`__hierarchy-group-*` 행 padding-left 1.5rem). OP가 WP parent를 `__hierarchy-root-{id}`/`__hierarchy-group-{parentId}` class로 렌더링하는 것을 활용.
+- 검증 예정: dev Playwright 진짜 마우스 Alt 드래그 → WP parent_id 영속 + 들여쓰기 표시 확인.
+
 ## [0.2.48] — 2026-06-28
 
 ### Fixed — 운영 slug permalink에서 WP 행이 섹션 아래 배치 안 됨 (#14, #13 후속)

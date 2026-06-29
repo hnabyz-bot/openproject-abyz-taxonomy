@@ -805,22 +805,38 @@
       e.stopImmediatePropagation();
       e.stopPropagation();
       state.drag = { type: "wp", id: wpId, fromCode: sectionCode };
+      // @MX:NOTE: Alt 키 = WP 부모(parent_id) 변경 모드 (#15). 기본 드래그는 섹션 이동(move_wp).
+      // UX 분리: 같은 WP handle의 드래그를 modifier(Alt)로 두 의도를 구분 (#11 드롭 핸들러 충돌 교훈).
+      if (e.altKey) {
+        state.drag.parentMode = true;
+      }
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", "abyz-wp-drag");
+      e.dataTransfer.setData("text/plain", state.drag.parentMode ? "abyz-wp-parent-drag" : "abyz-wp-drag");
       wpRow.classList.add("abyz-dragging");
-      Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
-        // When sectionCode is null (unassigned WP), all sections are valid drop targets
-        if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
-          r.classList.add("abyz-drop-zone");
-        }
-      });
+      if (state.drag.parentMode) {
+        // parent 모드: 다른 WP 행이 drop target
+        Array.prototype.forEach.call(document.querySelectorAll("tr[data-work-package-id]"), function (r) {
+          if (r.getAttribute("data-work-package-id") !== String(wpId)) {
+            r.classList.add("abyz-parent-drop-zone");
+          }
+        });
+      } else {
+        Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
+          // When sectionCode is null (unassigned WP), all sections are valid drop targets
+          if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
+            r.classList.add("abyz-drop-zone");
+          }
+        });
+      }
     });
 
     handle.addEventListener("dragend", function () {
       wpRow.classList.remove("abyz-dragging");
-      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over"), function (el) {
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over, .abyz-parent-drop-zone, .abyz-parent-drag-over"), function (el) {
         el.classList.remove("abyz-drop-zone");
         el.classList.remove("abyz-drag-over");
+        el.classList.remove("abyz-parent-drop-zone");
+        el.classList.remove("abyz-parent-drag-over");
       });
       state.drag = null;
     });
@@ -913,6 +929,44 @@
         fetchJson("/abyz_taxonomy/ui/assignments/move_wp", {
           method: "PATCH",
           body: JSON.stringify({ wpId: wpId, toSectionCode: sectionCode })
+        }).then(function () {
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) {
+          window.alert(err.message);
+        });
+      }
+    });
+  }
+
+  // @MX:NOTE: WP→WP 부모(parent) drop 핸들러 — Alt 드래그(parentMode) 시 다른 WP 위에 drop하면 parent_id 변경 (#15)
+  function addWpParentDropHandlers(wpRow, wpId) {
+    if (wpRow.dataset.abyzParentDropBound === "true") {
+      return;
+    }
+    wpRow.dataset.abyzParentDropBound = "true";
+
+    wpRow.addEventListener("dragover", function (e) {
+      if (state.drag && state.drag.parentMode && state.drag.id !== wpId) {
+        e.preventDefault();
+        wpRow.classList.add("abyz-parent-drag-over");
+      }
+    });
+
+    wpRow.addEventListener("dragleave", function (e) {
+      if (!wpRow.contains(e.relatedTarget)) {
+        wpRow.classList.remove("abyz-parent-drag-over");
+      }
+    });
+
+    wpRow.addEventListener("drop", function (e) {
+      e.preventDefault();
+      wpRow.classList.remove("abyz-parent-drag-over");
+      if (state.drag && state.drag.parentMode && state.drag.id !== wpId) {
+        var childId = state.drag.id;
+        state.drag = null;
+        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+          method: "PATCH",
+          body: JSON.stringify({ wpId: childId, toParentId: wpId })
         }).then(function () {
           return refreshTaxonomyViews("taxonomyNode");
         }).catch(function (err) {
@@ -1259,7 +1313,9 @@
         }).filter(Boolean);
 
         workPackageRows.forEach(function (wpRow) {
+          var wpRowId = getWpIdFromRow(wpRow);
           injectWpDragHandle(wpRow, entry.section.code);
+          if (wpRowId) { addWpParentDropHandlers(wpRow, wpRowId); }
           assignedRows.push(wpRow);
           orderedRows.push(wpRow);
         });
@@ -1275,6 +1331,8 @@
         // Unassigned WPs (created via OP's native UI) also get a drag handle
         // so they can be moved into any section. sectionCode=null means "no section".
         injectWpDragHandle(row, null);
+        var unassignedWpId = getWpIdFromRow(row);
+        if (unassignedWpId) { addWpParentDropHandlers(row, unassignedWpId); }
         orderedRows.push(row);
       }
     });

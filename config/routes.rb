@@ -7,6 +7,7 @@ Rails.application.routes.draw do
     patch "ui/assignments/move_project", to: "ui#move_project", defaults: { format: :json }
     patch "ui/assignments/reorder_node", to: "ui#reorder_node", defaults: { format: :json }
     patch "ui/assignments/move_title", to: "ui#move_title", defaults: { format: :json }
+    patch "ui/assignments/move_wp_parent", to: "ui#move_wp_parent", defaults: { format: :json }
     post "ui/project_titles", to: "ui#create_project_title", defaults: { format: :json }
     post "ui/projects", to: "ui#create_project", defaults: { format: :json }
     post "ui/wp_sections", to: "ui#create_wp_section", defaults: { format: :json }

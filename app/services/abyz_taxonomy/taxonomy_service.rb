@@ -204,6 +204,35 @@ module AbyzTaxonomy
       end
     end
 
+    # @MX:NOTE: WP 부모(parent_id) 드래그 변경 — OP WorkPackages::UpdateService 경유(권한/콜백/계약) (#15)
+    # to_parent_id 가 nil/0 이면 부모 해제(최상위). self/순환/타 프로젝트 부모는 거부.
+    def set_work_package_parent!(work_package_id:, to_parent_id:)
+      work_package = find_work_package!(work_package_id)
+
+      if to_parent_id.blank? || to_parent_id.to_i.zero?
+        new_parent = nil
+      else
+        pid = to_parent_id.to_i
+        raise TaxonomyError, "Cannot set self as parent" if pid == work_package.id
+
+        new_parent = WorkPackage.find_by(id: pid)
+        raise TaxonomyError.new("toParentId is unknown", status: 404) unless new_parent
+        raise TaxonomyError, "Parent must be in the same project" unless new_parent.project_id == work_package.project_id
+
+        # 순환 방지: 새 부모의 조상 체인에 자기 자신이 있으면 거부
+        ancestor = new_parent
+        while ancestor
+          raise TaxonomyError, "Cycle detected (descendant cannot become parent)" if ancestor.id == work_package.id
+          ancestor = ancestor.parent
+        end
+      end
+
+      call = ::WorkPackages::UpdateService.new(user: User.current, model: work_package).call(parent: new_parent)
+      raise TaxonomyError, call.errors.full_messages.join(", ") unless call.success?
+
+      work_package
+    end
+
     def move_project_to_title!(project_identifier:, to_title_code:)
       project = find_project!(project_identifier)
       to_title = find_project_title!(to_title_code)
