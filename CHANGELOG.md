@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.52] — 2026-06-29
+
+### Fixed — WP parent 드래그: overlay div 패턴으로 CDK drop 소비 근본 우회 (#15)
+
+- 기존 시도(capture phase 등)로 CDK 간섭을 부분 해결했으나 실제 브라우저에서 여전히 drop 미발생.
+- **해결**: dragenter 시 WP 행 위에 플러그인 관리 overlay `<div>(.abyz-parent-overlay)`를 주입. CDK는 overlay를 모르므로 HTML5 drop 이벤트가 확실히 발생. 기존 `mousedown stopPropagation`(line 794)과 동일한 "CDK보다 먼저 잡기" 원리를 drop 쪽에 적용. dragend 시 overlay 제거.
+- 기존 패턴 교차검증: 섹션 drop(동작함)은 플러그인 생성 행이라 CDK 무관. WP 행은 OP 네이티브라 CDK가 drop 소비 → overlay로 우회.
+
 ## [0.2.51] — 2026-06-29
 
 ### Fixed — WP parent 드래그 drop이 실제 브라우저에서 안 됨 (CDK 간섭) (#15)

@@ -931,46 +931,63 @@
     });
   }
 
-  // @MX:NOTE: WP→WP 부모(parent) drop 핸들러 — Alt 드래그(parentMode) 시 다른 WP 위에 drop하면 parent_id 변경 (#15)
+  // @MX:NOTE: WP→WP 부모(parent) drop — overlay div 패턴 (#15).
+  // WP 행은 OP CDK가 관리하여 HTML5 drop 이벤트가 소비됨. 섹션 행(플러그인 생성)은 동작하지만
+  // WP 행은 안 됨. 해결: WP 행 위에 플러그인 관리 overlay div를 주입. CDK는 overlay를 모르므로
+  // drop이 확실히 발생. 기존 mousedown stopPropagation(line 794)과 동일한 "CDK보다 먼저 잡기" 원리.
   function addWpParentDropHandlers(wpRow, wpId) {
     if (wpRow.dataset.abyzParentDropBound === "true") {
       return;
     }
     wpRow.dataset.abyzParentDropBound = "true";
 
-    // @MX:NOTE: capture phase(=true) 사용 — OP CDK가 WP 행의 drop 이벤트를 소비(bubble phase)하기 전에
-    // 플러그인이 drop을 선점 처리 (#15). 섹션 행은 플러그인 생성 행이라 bubble로 충분하지만,
-    // WP 행은 OP 네이티브 행이라 CDK 간섭 → capture 필수.
-    wpRow.addEventListener("dragover", function (e) {
-      if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
-        e.preventDefault();
-        wpRow.classList.add("abyz-parent-drag-over");
-      }
-    }, true);
-
-    wpRow.addEventListener("dragleave", function (e) {
-      if (!wpRow.contains(e.relatedTarget)) {
+    // dragstart 시 overlay 주입, dragend 시 제거 (상시 주입하면 OP 클릭/정렬 방해)
+    wpRow.addEventListener("dragenter", function (e) {
+      if (!state.drag || state.drag.type !== "wp" || state.drag.id === wpId) { return; }
+      if (wpRow.querySelector(".abyz-parent-overlay")) { return; }
+      var overlay = document.createElement("div");
+      overlay.className = "abyz-parent-overlay";
+      overlay.setAttribute("data-abyz-parent-wp-id", wpId);
+      // overlay는 WP 행 전체를 덮는 투명 드롭존
+      overlay.addEventListener("dragover", function (ev) {
+        if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
+          ev.preventDefault();
+          wpRow.classList.add("abyz-parent-drag-over");
+        }
+      });
+      overlay.addEventListener("dragleave", function (ev) {
         wpRow.classList.remove("abyz-parent-drag-over");
-      }
-    }, true);
+      });
+      overlay.addEventListener("drop", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        wpRow.classList.remove("abyz-parent-drag-over");
+        if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
+          var childId = state.drag.id;
+          state.drag = null;
+          fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+            method: "PATCH",
+            body: JSON.stringify({ wpId: childId, toParentId: wpId })
+          }).then(function () {
+            return refreshTaxonomyViews("taxonomyNode");
+          }).catch(function (err) {
+            window.alert(err.message);
+          });
+        }
+      });
+      wpRow.appendChild(overlay);
+    });
 
-    wpRow.addEventListener("drop", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    // 드래그 종료 시 overlay 제거
+    wpRow.addEventListener("dragend", function () {
+      var ov = wpRow.querySelector(".abyz-parent-overlay");
+      if (ov) { ov.remove(); }
       wpRow.classList.remove("abyz-parent-drag-over");
-      if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
-        var childId = state.drag.id;
-        state.drag = null;
-        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-          method: "PATCH",
-          body: JSON.stringify({ wpId: childId, toParentId: wpId })
-        }).then(function () {
-          return refreshTaxonomyViews("taxonomyNode");
-        }).catch(function (err) {
-          window.alert(err.message);
-        });
-      }
-    }, true);
+    });
+    wpRow.addEventListener("dragleave", function () {
+      var ov = wpRow.querySelector(".abyz-parent-overlay");
+      if (ov && !wpRow.contains(event.relatedTarget)) { ov.remove(); wpRow.classList.remove("abyz-parent-drag-over"); }
+    });
   }
 
   function addProjectTitleDropHandlers(titleRow, titleCode) {

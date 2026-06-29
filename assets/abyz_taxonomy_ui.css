@@ -476,5 +476,11 @@ tr:hover .abyz-drag-handle {
 /* @MX:NOTE: WP 부모(parent) 드래그 drop zone 표시 (#15) */
 .abyz-parent-drop-zone { outline: 1px dashed #34a853 !important; outline-offset: -1px; }
 .abyz-parent-drag-over { outline: 2px solid #34a853 !important; outline-offset: -2px; background: rgba(52, 168, 83, 0.08); }
+/* @MX:NOTE: parent overlay — WP 행 위에 덮어씌워 CDK drop 소비를 우회 (#15) */
+.abyz-parent-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999; pointer-events: auto;
+}
+tr { position: relative; }
 /* @MX:NOTE: WP 부모-자식 들여쓰기 (#15) — OP가 __hierarchy-group-{parentId} class 부여. 자식 WP 행 들여쓰기 */
 tr[class*="__hierarchy-group-"] td:first-child { padding-left: 1.5rem !important; }
