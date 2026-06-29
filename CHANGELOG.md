@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.50] — 2026-06-29
+
+### Changed — WP parent 드래그 UX 개선: Alt 제거 + handle 항상 표시 (#15)
+
+- **Alt modifier 제거** — 기본 드래그 하나로 drop target 자동 구분. WP 행에 drop = 부모(parent) 변경, 섹션 행에 drop = 섹션 이동(move_wp). 사용자 정정: "Alt를 누르고 이동하라고?" → modifier 없이 직관적 드래그로 수정.
+- **drag handle 항상 표시** — `opacity: 0`(hover 시만 표시) → `opacity: 0.5`(항상 보임, hover 시 1). 사용자 정정: "드래그로 이동 모습도 안 보임" → handle 가시성 문제 수정.
+- drop 이벤트 `stopPropagation`으로 WP drop/섹션 drop 충돌 방지.
+
 ## [0.2.49] — 2026-06-29
 
 ### Added — WP 부모/자식(parent) 드래그 설정/변경 + 들여쓰기 (#15)

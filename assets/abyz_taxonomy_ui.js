@@ -805,29 +805,22 @@
       e.stopImmediatePropagation();
       e.stopPropagation();
       state.drag = { type: "wp", id: wpId, fromCode: sectionCode };
-      // @MX:NOTE: Alt 키 = WP 부모(parent_id) 변경 모드 (#15). 기본 드래그는 섹션 이동(move_wp).
-      // UX 분리: 같은 WP handle의 드래그를 modifier(Alt)로 두 의도를 구분 (#11 드롭 핸들러 충돌 교훈).
-      if (e.altKey) {
-        state.drag.parentMode = true;
-      }
+      // @MX:NOTE: 드래그 하나로 drop target 자동 구분 (#15) — WP 행에 drop = 부모(parent) 변경,
+      // 섹션 행에 drop = 섹션 이동(move_wp). modifier(Alt) 없이 직관적 드래그.
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", state.drag.parentMode ? "abyz-wp-parent-drag" : "abyz-wp-drag");
+      e.dataTransfer.setData("text/plain", "abyz-wp-drag");
       wpRow.classList.add("abyz-dragging");
-      if (state.drag.parentMode) {
-        // parent 모드: 다른 WP 행이 drop target
-        Array.prototype.forEach.call(document.querySelectorAll("tr[data-work-package-id]"), function (r) {
-          if (r.getAttribute("data-work-package-id") !== String(wpId)) {
-            r.classList.add("abyz-parent-drop-zone");
-          }
-        });
-      } else {
-        Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
-          // When sectionCode is null (unassigned WP), all sections are valid drop targets
-          if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
-            r.classList.add("abyz-drop-zone");
-          }
-        });
-      }
+      // 두 drop target 모두 표시: 다른 WP 행(parent) + 섹션 행(섹션 이동)
+      Array.prototype.forEach.call(document.querySelectorAll("tr[data-work-package-id]"), function (r) {
+        if (r.getAttribute("data-work-package-id") !== String(wpId)) {
+          r.classList.add("abyz-parent-drop-zone");
+        }
+      });
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
+        if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
+          r.classList.add("abyz-drop-zone");
+        }
+      });
     });
 
     handle.addEventListener("dragend", function () {
@@ -946,7 +939,7 @@
     wpRow.dataset.abyzParentDropBound = "true";
 
     wpRow.addEventListener("dragover", function (e) {
-      if (state.drag && state.drag.parentMode && state.drag.id !== wpId) {
+      if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
         e.preventDefault();
         wpRow.classList.add("abyz-parent-drag-over");
       }
@@ -960,8 +953,9 @@
 
     wpRow.addEventListener("drop", function (e) {
       e.preventDefault();
+      e.stopPropagation();
       wpRow.classList.remove("abyz-parent-drag-over");
-      if (state.drag && state.drag.parentMode && state.drag.id !== wpId) {
+      if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
         var childId = state.drag.id;
         state.drag = null;
         fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
