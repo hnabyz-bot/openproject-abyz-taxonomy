@@ -1,6 +1,6 @@
 # OpenProject Taxonomy 커스텀 확장 — 배포 런북
 
-- **대상 버전**: openproject-abyz-taxonomy:17.5.0-0.2.34
+- **대상 버전**: openproject-abyz-taxonomy:17.5.0-0.2.48
 - **운영 인스턴스**: `openproject-stack` (raspi5p, plm.abyz-lab.work)
 - **관련 SPEC**: SPEC-OP-TAXONOMY-001 v0.4.1
 - **관련 교차검증 보고서**: `docs/superpowers/reports/2026-06-22-op-taxonomy-update-safe-doc-crosscheck.md`
@@ -19,18 +19,18 @@
 
 ---
 
-## 현재 검증/배포 상태 (2026-06-27)
+## 현재 검증/배포 상태 (2026-06-29)
 
 | 항목 | 값 |
 |---|---|
-| 개발 image | `openproject-abyz-taxonomy:17.5.0-0.2.45` |
+| 개발 image | `openproject-abyz-taxonomy:17.5.0-0.2.48` |
 | 개발 compose project | `openproject-taxonomy` |
 | 개발 OP container | `openproject-taxonomy-openproject-taxonomy-1` |
 | 개발 access proxy | `openproject-taxonomy-access` |
 | 개발 URL | `http://localhost:8087`, `http://10.20.6.187:8087`, `http://100.110.194.101:8087` |
 | 운영 OP container | `openproject-stack-openproject-1` |
-| 운영 image | `openproject-abyz-taxonomy:17.5.0-0.2.45` (2026-06-27 배포, 하이어라키 들여쓰기 #9) |
-| 운영 반영 | **완료** — plm.abyz-lab.work HTTP 302 정상, 자산 ?v=0.2.45 서빙 확인 |
+| 운영 image | `openproject-abyz-taxonomy:17.5.0-0.2.48` (2026-06-29 배포, slug permalink 대응 #13/#14 + 섹션 정렬 #12) |
+| 운영 반영 | **완료** — plm.abyz-lab.work HTTP 302 정상, 자산 ?v=0.2.48 서빙, WP 섹션 아래 배치 + move_wp 실화면 검증 |
 
 최종 검증:
 

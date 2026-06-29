@@ -131,6 +131,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 > **[HARD] 드래그 핸들러 충돌 — 하나의 요소에 두 drop 의도를 붙이지 말 것**: 같은 요소(예: 타이틀 행)에 reorder(순서 변경) drop 핸들러와 reparent(부모 변경, move_title) drop 핸들러를 동시에 붙이면, 단일 drop 이벤트에서 한 API가 선점 실행되어 다른 쪽이 동작하지 않는다(교훈: 0.2.45 move_title이 reorder_node에 선점당해 네이티브 DnD 이벤트가 발생해도 parent_id 미변경). "재정렬" vs "부모 변경"은 드롭 영역 분리 또는 modifier key 등 **사용자 제스처로 명시 구분**하는 UX 설계가 선행되어야 한다.
 
+> **[HARD] WP permalink 형식 차이 (숫자 id vs slug) — dev와 운영이 다름**: dev OP는 WP permalink가 숫자 id(`/work_packages/330`)이고, 운영 OP는 slug(`/projects/.../work_packages/PROJ6-1/activity`)이다. JS에서 `a[href]` 정규식 `/\/work_packages\/(\d+)/`로 WP id를 추출하는 코드는 dev에서만 동작하고 운영에서는 매칭 실패한다. WP id가 필요한 모든 JS 경로(`getWpIdFromRow`, `workPackageRowMap`, `workPackageRenderSignature`, `postRowSigs`)는 **`tr[data-work-package-id]` 속성에서 id를 우선 읽어야 한다**. 교훈(0.2.47 #13 move_wp, 0.2.48 #14 렌더링): dev=운영 동일 코드인데 **운영만 안 되면 WP permalink 형식(slug)을 1순위로 의심**하라.
+
 ## MoAI Workflow
 
 ```bash

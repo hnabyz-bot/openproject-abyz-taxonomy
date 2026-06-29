@@ -36,12 +36,27 @@ OP 소스 패치는 버전드 어댑터 패치로만 허용한다. `patches/open
 2026-06-26 기준 격리 개발 인스턴스:
 
 ```text
-Image:     openproject-abyz-taxonomy:17.5.0-0.2.45
+Image:     openproject-abyz-taxonomy:17.5.0-0.2.48
 Container: openproject-taxonomy-openproject-taxonomy-1
 Access:    http://localhost:8087
            http://10.20.6.187:8087
            http://100.110.194.101:8087
 ```
+
+**0.2.48 운영 slug permalink에서 WP 섹션 배치/렌더링 수정 (#14, #13 후속):**
+
+- 운영 OP는 WP permalink가 slug(`/projects/.../work_packages/PROJ6-1/...`) 형식. 기존 `a[href]` 정규식 `/\/work_packages\/(\d+)/`이 매칭되지 않아 `workPackageRowMap`/`workPackageRenderSignature`/`postRowSigs`가 WP id를 못 읽음 → WP 행이 섹션 아래에 배치되지 않고 섹션만 상단에 몰림(텍스트 카운트만 표시).
+- 수정: 이 3곳(+ `getWpIdFromRow`)이 모두 `tr[data-work-package-id]` 속성에서 WP id를 우선 읽도록 통일. dev는 permalink가 숫자 id라 기존과 동일 동작.
+- **검증**: dev Playwright slug 모킹 + 운영 실화면(drake.lee, PROJ6) — WP가 섹션 아래 정상 중첩 배치(orphan 0), move_wp 200 + DB 영속.
+
+**0.2.47 unassigned WP→섹션 move_wp 운영 미동작 수정 (#13):**
+
+- 운영 slug permalink에서 `getWpIdFromRow`가 wpId를 못 읽어 dragstart가 `preventDefault`로 드래그를 취소 → move_wp 미호출. `data-work-package-id` 속성 우선 읽기로 수정.
+- 검증: 운영 drake.lee 실제 드래그 → move_wp PATCH 200 + DB 영속(WP 427 → wp.PROJ6.f-up).
+
+**0.2.46 WP 섹션 행 label 좌측 정렬 (#12, #6 섹션 확장):**
+
+- `.abyz-taxonomy-wp-section-row .abyz-taxonomy-row-label { margin-right: auto }` 추가. #6에서 타이틀 행에만 적용했던 좌측 고정을 섹션 행으로 확장(flex `space-between` 중앙 배치 해결).
 
 **0.2.45 하이어라키 들여쓰기 (portfolio → program → title → project) (#9):**
 
@@ -80,7 +95,7 @@ Access:    http://localhost:8087
 - taxonomy child 프로젝트 행 계층 들여쓰기 정렬 오류 수정 (`padding-left: 0`) — 프로젝트 목록 child indent 46px → 40px
 - taxonomy child 프로젝트 이름 bold 상속 제거 (`font-weight: normal`) — `cloneNode(true)` OP 스타일 상속 문제 해결
 
-운영 인스턴스(`openproject-stack-openproject-1`, `plm.abyz-lab.work`) — **2026-06-27 0.2.45 배포 완료**(하이어라키 들여쓰기). 배포는 RUNBOOK Phase 6 최소 다운타임 절차(`.env` OP_IMAGE 만 `sed -i` 교체 → `compose up -d`, openproject 서비스만 재생성). 운영 반영 시 사전 백업 + `sed -i`(echo 금지) + HTTP 실확인 + 롤백 Path A 대기 필수(INC-20260625 교훈).
+운영 인스턴스(`openproject-stack-openproject-1`, `plm.abyz-lab.work`) — **2026-06-29 0.2.48 배포 완료**(slug permalink 대응 #13/#14 + 섹션 정렬 #12). 배포는 RUNBOOK Phase 6 최소 다운타임 절차(`.env` OP_IMAGE 만 `sed -i` 교체 → `compose up -d`, openproject 서비스만 재생성). 운영 반영 시 사전 백업 + `sed -i`(echo 금지) + HTTP 실확인 + 롤백 Path A 대기 필수(INC-20260625 교훈). 0.2.46→0.2.48 교훈: dev는 WP permalink가 숫자 id, 운영은 slug — JS에서 `a[href]` 정규식으로 WP id 추출 시 운영만 실패하므로 `data-work-package-id` 속성 우선 사용 필수.
 
 최근 검증 데이터 리셋 기준:
 
