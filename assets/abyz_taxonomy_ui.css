@@ -476,11 +476,28 @@ tr:hover .abyz-drag-handle {
 /* @MX:NOTE: WP 부모(parent) 드래그 drop zone 표시 (#15) */
 .abyz-parent-drop-zone { outline: 1px dashed #34a853 !important; outline-offset: -1px; }
 .abyz-parent-drag-over { outline: 2px solid #34a853 !important; outline-offset: -2px; background: rgba(52, 168, 83, 0.08); }
-/* @MX:NOTE: parent overlay — WP 행 위에 덮어씌워 CDK drop 소비를 우회 (#15) */
-.abyz-parent-overlay {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 9999; pointer-events: auto;
-}
-tr { position: relative; }
 /* @MX:NOTE: WP 부모-자식 들여쓰기 (#15) — OP가 __hierarchy-group-{parentId} class 부여. 자식 WP 행 들여쓰기 */
 tr[class*="__hierarchy-group-"] td:first-child { padding-left: 1.5rem !important; }
+/* @MX:NOTE: WP parent 설정 버튼 — 클릭 기반 (#15) */
+.abyz-parent-btn {
+  display: inline-flex; align-items: center; cursor: pointer;
+  color: #4a90d9; margin-right: 6px; vertical-align: middle;
+  flex-shrink: 0; opacity: 0.5; transition: opacity 0.15s ease;
+}
+.abyz-parent-btn:hover { opacity: 1; }
+/* @MX:NOTE: WP parent 설정 드롭다운 (#15) */
+.abyz-parent-selector {
+  position: absolute; z-index: 10000; background: #fff;
+  border: 1px solid #d0d7de; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 240px; max-height: 300px; overflow-y: auto; font-size: 13px;
+}
+.abyz-parent-selector-title {
+  padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #eaeef2; color: #57606a;
+}
+.abyz-parent-selector-item {
+  padding: 6px 12px; cursor: pointer; color: #24292f;
+}
+.abyz-parent-selector-item:hover { background: #ddf4ff; }
+.abyz-parent-selector-empty {
+  padding: 8px 12px; color: #8b949e; font-style: italic;
+}

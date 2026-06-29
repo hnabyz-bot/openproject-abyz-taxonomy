@@ -787,6 +787,23 @@
     handle.setAttribute("title", "드래그하여 다른 섹션으로 이동");
     handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
 
+    // @MX:NOTE: WP 부모(parent) 설정 버튼 — 클릭 기반, CDK 무관 (#15).
+    // 드래그는 OP CDK가 WP 행의 drop을 소비하여 실제 브라우저에서 불가.
+    // 기존 taxonomyRowMenuButton(섹션 행) 패턴과 동일하게 클릭으로 parent 설정.
+    var wpId = getWpIdFromRow(wpRow);
+    if (wpId) {
+      var parentBtn = document.createElement("span");
+      parentBtn.className = "abyz-parent-btn";
+      parentBtn.setAttribute("title", "부모 WP 설정/해제");
+      parentBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M6 1v8M3 6l3 3 3-3M1 11h10"/></svg>';
+      parentBtn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        showParentSelector(wpRow, wpId);
+      });
+      // handle 다음에 parent 버튼 삽입
+    }
+
     // Stop CDK _pointerDown on <tr> from starting its pointer-based drag tracking.
     // CDK registers mousedown on <tr> (bubble phase). Without this, CDK starts
     // its pointer drag from mousedown even though we later stop the dragstart bubble.
@@ -835,6 +852,83 @@
     });
 
     firstCell.insertBefore(handle, firstCell.firstChild);
+    if (parentBtn) { firstCell.insertBefore(parentBtn, handle.nextSibling); }
+  }
+
+  // @MX:NOTE: WP 부모(parent) 설정 드롭다운 — 클릭 기반, CDK 무관 (#15)
+  function showParentSelector(wpRow, wpId) {
+    // 기존 드롭다운 제거
+    var existing = document.getElementById("abyz-parent-selector");
+    if (existing) { existing.remove(); }
+
+    // 같은 project의 WP 목록 수집 (state.tree에서)
+    var pid = currentProjectIdentifier();
+    var allWps = [];
+    if (state.tree && state.tree.wpSections) {
+      state.tree.wpSections.forEach(function (entry) {
+        if (entry.project && entry.project.identifier === pid) {
+          (entry.workPackages || []).forEach(function (wp) {
+            if (wp.id !== wpId) { allWps.push(wp); }
+          });
+        }
+      });
+    }
+
+    // 드롭다운 생성
+    var dropdown = document.createElement("div");
+    dropdown.id = "abyz-parent-selector";
+    dropdown.className = "abyz-parent-selector";
+    dropdown.innerHTML = '<div class="abyz-parent-selector-title">부모 WP 선택</div>';
+
+    // "부모 해제" 옵션
+    var clearItem = document.createElement("div");
+    clearItem.className = "abyz-parent-selector-item";
+    clearItem.textContent = "（부모 없음 — 최상위）";
+    clearItem.addEventListener("click", function () {
+      fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+        method: "PATCH",
+        body: JSON.stringify({ wpId: wpId, toParentId: "" })
+      }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
+        .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+    });
+    dropdown.appendChild(clearItem);
+
+    // WP 목록
+    allWps.forEach(function (wp) {
+      var item = document.createElement("div");
+      item.className = "abyz-parent-selector-item";
+      item.textContent = "#" + wp.id + " " + (wp.subject || "").slice(0, 40);
+      item.addEventListener("click", function () {
+        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+          method: "PATCH",
+          body: JSON.stringify({ wpId: wpId, toParentId: wp.id })
+        }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
+          .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+      });
+      dropdown.appendChild(item);
+    });
+
+    if (allWps.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "abyz-parent-selector-empty";
+      empty.textContent = "같은 프로젝트에 다른 WP가 없습니다";
+      dropdown.appendChild(empty);
+    }
+
+    // WP 행 아래에 배치
+    dropdown.style.position = "absolute";
+    var rect = wpRow.getBoundingClientRect();
+    dropdown.style.top = (window.scrollY + rect.bottom) + "px";
+    dropdown.style.left = (window.scrollX + rect.left + 20) + "px";
+    document.body.appendChild(dropdown);
+
+    // 외부 클릭 시 닫기
+    setTimeout(function () {
+      document.addEventListener("click", function close() {
+        dropdown.remove();
+        document.removeEventListener("click", close);
+      }, { once: true });
+    }, 100);
   }
 
   function injectProjectDragHandle(projectRow, titleCode) {

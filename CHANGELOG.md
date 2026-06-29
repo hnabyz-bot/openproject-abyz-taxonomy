@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.53] — 2026-06-29
+
+### Changed — WP parent 드래그 → 클릭 기반 parent 설정 버튼으로 전환 (#15)
+
+- **드래그 방식 폐기** — OP CDK가 WP 행(네이티브)의 HTML5 DnD drop 이벤트를 근본적으로 소비하여, 실제 브라우저에서 drop이 발생하지 않음(0.2.49~0.2.52 5번 시도 모두 실패). 기존 패턴 교차검증 결과: 섹션 드래그(플러그인 생성 행)만 동작, WP 행(네이티브)은 CDK 충돌로 불가.
+- **클릭 기반 parent 설정 버튼 구현** — WP 행 handle 옆에 ↓ 아이콘 버튼(.abyz-parent-btn) 추가. 클릭 시 같은 프로젝트 WP 목록 드롭다운 표시 → parent 선택 → move_wp_parent API 호출. "부모 없음" 옵션으로 해제 가능. 기존 taxonomyRowMenuButton(섹션 행 메뉴)과 동일한 클릭 패턴, CDK 완전 무관.
+- 드래그 관련 코드(overlay, parent drop zone, capture phase) 제거, 클릭 기반 showParentSelector 함수 추가.
+
 ## [0.2.52] — 2026-06-29
 
 ### Fixed — WP parent 드래그: overlay div 패턴으로 CDK drop 소비 근본 우회 (#15)
