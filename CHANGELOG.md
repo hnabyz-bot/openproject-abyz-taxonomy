@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.55] — 2026-06-29
+
+### Fixed — 하위 WP(자식)에서 parent 버튼 클릭 → 드롭다운 안 됨 (CDK mousedown 소비) (#15)
+
+- **원인**: OP CDK가 자식 WP 행(`__hierarchy-group-*`)의 `mousedown` 이벤트를 소비 → `click` 이벤트가 parentBtn에 전달되지 않음. 상위 WP(루트, `__hierarchy-root-*`)는 CDK가 다르게 처리하여 통과. Playwright(headless)는 CDK 활성화가 달라서 모두 동작 → 실제 브라우저와 갭.
+- **수정**: parentBtn에 `mousedown stopPropagation` 추가. 기존 드래그 handle(line 807)과 **동일한 CDK 우회 패턴** — CDK가 mousedown을 가로채기 전에 전파 차단 → click 정상 발생.
+
 ## [0.2.54] — 2026-06-29
 
 ### Fixed — parent 드롭다운이 실제 브라우저에서 안 보임 (#15)

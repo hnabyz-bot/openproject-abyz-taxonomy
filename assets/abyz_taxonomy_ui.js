@@ -796,12 +796,17 @@
       parentBtn.className = "abyz-parent-btn";
       parentBtn.setAttribute("title", "부모 WP 설정/해제");
       parentBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M6 1v8M3 6l3 3 3-3M1 11h10"/></svg>';
+      // @MX:NOTE: CDK가 자식 WP 행(__hierarchy-group)의 mousedown을 소비하여 click이 발생하지 않음.
+      // 기존 드래그 handle(line 807)과 동일한 mousedown stopPropagation 패턴으로 CDK 우회.
+      // 하위 WP에서도 버튼 클릭 → 드롭다운 정상 동작 (#15).
+      parentBtn.addEventListener("mousedown", function (ev) {
+        ev.stopPropagation();
+      });
       parentBtn.addEventListener("click", function (ev) {
         ev.preventDefault();
         ev.stopPropagation();
         showParentSelector(wpRow, wpId);
       });
-      // handle 다음에 parent 버튼 삽입
     }
 
     // Stop CDK _pointerDown on <tr> from starting its pointer-based drag tracking.
