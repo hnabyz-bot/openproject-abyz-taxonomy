@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.54] — 2026-06-29
+
+### Fixed — parent 드롭다운이 실제 브라우저에서 안 보임 (#15)
+
+- **원인**: `position: absolute` + `z-index: 10000`이 OP Angular의 stacking context에 갇혀 가려짐. OP 헤더/사이드바가 더 높은 z-index 사용.
+- **수정**: `position: fixed !important` + `z-index: 2147483647`(int 최대값)로 viewport 기준 최상위 표시. `display/visibility/opacity` 강제 적용.
+- 외부 클릭 닫기 로직 개선: 드롭다운 내부 클릭 `stopPropagation`으로 닫힘 방지, setTimeout 200ms로 클릭 버블링 완전 분리.
+
 ## [0.2.53] — 2026-06-29
 
 ### Changed — WP parent 드래그 → 클릭 기반 parent 설정 버튼으로 전환 (#15)

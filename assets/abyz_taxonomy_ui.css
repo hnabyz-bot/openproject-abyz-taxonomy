@@ -485,11 +485,12 @@ tr[class*="__hierarchy-group-"] td:first-child { padding-left: 1.5rem !important
   flex-shrink: 0; opacity: 0.5; transition: opacity 0.15s ease;
 }
 .abyz-parent-btn:hover { opacity: 1; }
-/* @MX:NOTE: WP parent 설정 드롭다운 (#15) */
+/* @MX:NOTE: WP parent 설정 드롭다운 (#15) — position:fixed + z-index 최상위로 OP Angular 가림 방지 */
 .abyz-parent-selector {
-  position: absolute; z-index: 10000; background: #fff;
+  position: fixed !important; z-index: 2147483647 !important; background: #fff !important;
   border: 1px solid #d0d7de; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   min-width: 240px; max-height: 300px; overflow-y: auto; font-size: 13px;
+  display: block !important; visibility: visible !important; opacity: 1 !important;
 }
 .abyz-parent-selector-title {
   padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #eaeef2; color: #57606a;

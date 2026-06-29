@@ -915,20 +915,20 @@
       dropdown.appendChild(empty);
     }
 
-    // WP 행 아래에 배치
-    dropdown.style.position = "absolute";
+    // WP 행 아래에 배치 — position:fixed로 viewport 기준 (scroll/stacking context 무관)
     var rect = wpRow.getBoundingClientRect();
-    dropdown.style.top = (window.scrollY + rect.bottom) + "px";
-    dropdown.style.left = (window.scrollX + rect.left + 20) + "px";
+    dropdown.style.top = (rect.bottom + 2) + "px";
+    dropdown.style.left = (rect.left + 20) + "px";
     document.body.appendChild(dropdown);
 
-    // 외부 클릭 시 닫기
+    // 외부 클릭 시 닫기 — 드롭다운 내부 클릭은 전파 차단하여 닫히지 않게
+    dropdown.addEventListener("click", function (ev) { ev.stopPropagation(); });
     setTimeout(function () {
       document.addEventListener("click", function close() {
-        dropdown.remove();
+        if (document.getElementById("abyz-parent-selector")) { dropdown.remove(); }
         document.removeEventListener("click", close);
-      }, { once: true });
-    }, 100);
+      });
+    }, 200);
   }
 
   function injectProjectDragHandle(projectRow, titleCode) {
