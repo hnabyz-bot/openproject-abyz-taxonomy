@@ -1304,7 +1304,7 @@
     injectWpParentLink();
   }
 
-  // @MX:NOTE: WP 테이블 위에 "부모 관리" 링크 추가 (WP 행 수정 아님, 페이지 레벨 링크 — OP Angular 간섭 없음)
+  // @MX:NOTE: WP 테이블 위에 "부모 관리" 링크 추가 — 새 탭으로 열어 OP Angular SPA 라우팅 간섭 회피 (#15)
   function injectWpParentLink() {
     var table = document.querySelector("table.work-package-table");
     if (!table) return;
@@ -1312,11 +1312,18 @@
     if (existing) return;
     var pid = currentProjectIdentifier();
     if (!pid) return;
+    var url = "/abyz_taxonomy/ui/wp_parents?project=" + encodeURIComponent(pid);
     var link = document.createElement("a");
     link.id = "abyz-wp-parent-link";
-    link.href = "/abyz_taxonomy/ui/wp_parents?project=" + encodeURIComponent(pid);
+    link.href = url;
+    link.target = "_blank";
     link.textContent = "WP 부모/자식 관계 관리";
-    link.style.cssText = "display:inline-block;margin:8px 0;padding:4px 12px;background:#4a90d9;color:#fff;border-radius:4px;text-decoration:none;font-size:13px;";
+    link.style.cssText = "display:inline-block;margin:8px 0;padding:4px 12px;background:#4a90d9;color:#fff;border-radius:4px;text-decoration:none;font-size:13px;cursor:pointer;";
+    link.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.open(url, "_blank");
+    });
     table.parentNode.insertBefore(link, table);
   }
 
