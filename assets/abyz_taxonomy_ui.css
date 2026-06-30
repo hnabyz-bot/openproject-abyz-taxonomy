@@ -466,6 +466,9 @@ tr:hover .abyz-drag-handle {
 .abyz-taxonomy-project-child-row .abyz-taxonomy-row-inner,
 .abyz-taxonomy-project-child-row td.name { padding-left: 6rem !important; }
 
+/* @MX:NOTE: WP 부모-자식 계층 들여쓰기 (#15) — OP가 __hierarchy-group-{parentId} 클래스 부여. 자식 WP 행 들여쓰기 */
+tr[class*="__hierarchy-group-"] > td:first-child { padding-left: 1.5rem !important; }
+
 /* @MX:NOTE: 타이틀 계층 이동 drop 표시 (#9) */
 .abyz-taxonomy-project-title-row.abyz-title-drop-target .abyz-taxonomy-row-inner {
   outline: 2px dashed #4285f4;
