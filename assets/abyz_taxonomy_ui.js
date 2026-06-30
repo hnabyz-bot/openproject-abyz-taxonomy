@@ -885,21 +885,28 @@
     dropdown.className = "abyz-parent-selector";
     dropdown.innerHTML = '<div class="abyz-parent-selector-title">부모 WP 선택</div>';
 
-    // "부모 해제" 옵션 — <button> + confirm 없이 즉시 API 호출 (#15)
+    // "부모 해제" 옵션 — setTimeout(0)으로 Zone.js change detection 이후 API 호출 (#15)
     var clearItem = document.createElement("button");
     clearItem.type = "button";
     clearItem.className = "abyz-parent-selector-item";
     clearItem.textContent = "（부모 없음 — 최상위）";
     clearItem.addEventListener("click", function () {
-      fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-        method: "PATCH",
-        body: JSON.stringify({ wpId: wpId, toParentId: "" })
-      }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
-        .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+      var targetWpId = wpId;
+      var dd = document.getElementById("abyz-parent-selector");
+      if (dd) { dd.style.display = "none"; }
+      setTimeout(function () {
+        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+          method: "PATCH",
+          body: JSON.stringify({ wpId: targetWpId, toParentId: "" })
+        }).then(function () {
+          dd = document.getElementById("abyz-parent-selector"); if (dd) dd.remove();
+          return refreshTaxonomyViews("taxonomyNode");
+        }).catch(function (err) { window.alert(err.message); });
+      }, 0);
     });
     dropdown.appendChild(clearItem);
 
-    // WP 목록 — <button> + 즉시 API 호출 (confirm 동기 차단 제거, #15)
+    // WP 목록 — setTimeout(0)으로 Zone.js change detection 이후 API 호출 (#15)
     allWps.forEach(function (wp) {
       var item = document.createElement("button");
       item.type = "button";
@@ -907,11 +914,18 @@
       item.textContent = "#" + wp.id + " " + (wp.subject || "").slice(0, 40);
       item.addEventListener("click", function () {
         var toId = wp.id;
-        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-          method: "PATCH",
-          body: JSON.stringify({ wpId: wpId, toParentId: toId })
-        }).then(function () { dropdown.remove(); return refreshTaxonomyViews("taxonomyNode"); })
-          .catch(function (err) { window.alert(err.message); dropdown.remove(); });
+        var targetWpId = wpId;
+        var dd = document.getElementById("abyz-parent-selector");
+        if (dd) { dd.style.display = "none"; }
+        setTimeout(function () {
+          fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
+            method: "PATCH",
+            body: JSON.stringify({ wpId: targetWpId, toParentId: toId })
+          }).then(function () {
+            dd = document.getElementById("abyz-parent-selector"); if (dd) dd.remove();
+            return refreshTaxonomyViews("taxonomyNode");
+          }).catch(function (err) { window.alert(err.message); });
+        }, 0);
       });
       dropdown.appendChild(item);
     });
