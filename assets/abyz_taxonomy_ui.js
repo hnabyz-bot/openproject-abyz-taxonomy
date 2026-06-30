@@ -787,28 +787,6 @@
     handle.setAttribute("title", "드래그하여 다른 섹션으로 이동");
     handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="7" cy="2.5" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="7" cy="11.5" r="1.5"/></svg>';
 
-    // @MX:NOTE: WP 부모(parent) 설정 버튼 — 클릭 기반, CDK 무관 (#15).
-    // 드래그는 OP CDK가 WP 행의 drop을 소비하여 실제 브라우저에서 불가.
-    // 기존 taxonomyRowMenuButton(섹션 행) 패턴과 동일하게 클릭으로 parent 설정.
-    var wpId = getWpIdFromRow(wpRow);
-    if (wpId) {
-      var parentBtn = document.createElement("span");
-      parentBtn.className = "abyz-parent-btn";
-      parentBtn.setAttribute("title", "부모 WP 설정/해제");
-      parentBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg"><path d="M6 1v8M3 6l3 3 3-3M1 11h10"/></svg>';
-      // @MX:NOTE: CDK가 자식 WP 행(__hierarchy-group)의 mousedown을 소비하여 click이 발생하지 않음.
-      // 기존 드래그 handle(line 807)과 동일한 mousedown stopPropagation 패턴으로 CDK 우회.
-      // 하위 WP에서도 버튼 클릭 → 드롭다운 정상 동작 (#15).
-      parentBtn.addEventListener("mousedown", function (ev) {
-        ev.stopPropagation();
-      });
-      parentBtn.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        showParentSelector(wpRow, wpId);
-      });
-    }
-
     // Stop CDK _pointerDown on <tr> from starting its pointer-based drag tracking.
     // CDK registers mousedown on <tr> (bubble phase). Without this, CDK starts
     // its pointer drag from mousedown even though we later stop the dragstart bubble.
@@ -827,18 +805,11 @@
       e.stopImmediatePropagation();
       e.stopPropagation();
       state.drag = { type: "wp", id: wpId, fromCode: sectionCode };
-      // @MX:NOTE: 드래그 하나로 drop target 자동 구분 (#15) — WP 행에 drop = 부모(parent) 변경,
-      // 섹션 행에 drop = 섹션 이동(move_wp). modifier(Alt) 없이 직관적 드래그.
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", "abyz-wp-drag");
       wpRow.classList.add("abyz-dragging");
-      // 두 drop target 모두 표시: 다른 WP 행(parent) + 섹션 행(섹션 이동)
-      Array.prototype.forEach.call(document.querySelectorAll("tr[data-work-package-id]"), function (r) {
-        if (r.getAttribute("data-work-package-id") !== String(wpId)) {
-          r.classList.add("abyz-parent-drop-zone");
-        }
-      });
       Array.prototype.forEach.call(document.querySelectorAll(".abyz-taxonomy-wp-section-row"), function (r) {
+        // When sectionCode is null (unassigned WP), all sections are valid drop targets
         if (!sectionCode || r.getAttribute("data-abyz-taxonomy-code") !== sectionCode) {
           r.classList.add("abyz-drop-zone");
         }
@@ -847,110 +818,14 @@
 
     handle.addEventListener("dragend", function () {
       wpRow.classList.remove("abyz-dragging");
-      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over, .abyz-parent-drop-zone, .abyz-parent-drag-over"), function (el) {
+      Array.prototype.forEach.call(document.querySelectorAll(".abyz-drop-zone, .abyz-drag-over"), function (el) {
         el.classList.remove("abyz-drop-zone");
         el.classList.remove("abyz-drag-over");
-        el.classList.remove("abyz-parent-drop-zone");
-        el.classList.remove("abyz-parent-drag-over");
       });
       state.drag = null;
     });
 
     firstCell.insertBefore(handle, firstCell.firstChild);
-    if (parentBtn) { firstCell.insertBefore(parentBtn, handle.nextSibling); }
-  }
-
-  // @MX:NOTE: WP 부모(parent) 설정 드롭다운 — 클릭 기반, CDK 무관 (#15)
-  function showParentSelector(wpRow, wpId) {
-    // 기존 드롭다운 제거
-    var existing = document.getElementById("abyz-parent-selector");
-    if (existing) { existing.remove(); }
-
-    // 같은 project의 WP 목록 수집 (state.tree에서)
-    var pid = currentProjectIdentifier();
-    var allWps = [];
-    if (state.tree && state.tree.wpSections) {
-      state.tree.wpSections.forEach(function (entry) {
-        if (entry.project && entry.project.identifier === pid) {
-          (entry.workPackages || []).forEach(function (wp) {
-            if (wp.id !== wpId) { allWps.push(wp); }
-          });
-        }
-      });
-    }
-
-    // 드롭다운 생성
-    var dropdown = document.createElement("div");
-    dropdown.id = "abyz-parent-selector";
-    dropdown.className = "abyz-parent-selector";
-    dropdown.innerHTML = '<div class="abyz-parent-selector-title">부모 WP 선택</div>';
-
-    // "부모 해제" 옵션 — setTimeout(0)으로 Zone.js change detection 이후 API 호출 (#15)
-    var clearItem = document.createElement("button");
-    clearItem.type = "button";
-    clearItem.className = "abyz-parent-selector-item";
-    clearItem.textContent = "（부모 없음 — 최상위）";
-    clearItem.addEventListener("click", function () {
-      var targetWpId = wpId;
-      var dd = document.getElementById("abyz-parent-selector");
-      if (dd) { dd.style.display = "none"; }
-      setTimeout(function () {
-        fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-          method: "PATCH",
-          body: JSON.stringify({ wpId: targetWpId, toParentId: "" })
-        }).then(function () {
-          dd = document.getElementById("abyz-parent-selector"); if (dd) dd.remove();
-          return refreshTaxonomyViews("taxonomyNode");
-        }).catch(function (err) { window.alert(err.message); });
-      }, 0);
-    });
-    dropdown.appendChild(clearItem);
-
-    // WP 목록 — setTimeout(0)으로 Zone.js change detection 이후 API 호출 (#15)
-    allWps.forEach(function (wp) {
-      var item = document.createElement("button");
-      item.type = "button";
-      item.className = "abyz-parent-selector-item";
-      item.textContent = "#" + wp.id + " " + (wp.subject || "").slice(0, 40);
-      item.addEventListener("click", function () {
-        var toId = wp.id;
-        var targetWpId = wpId;
-        var dd = document.getElementById("abyz-parent-selector");
-        if (dd) { dd.style.display = "none"; }
-        setTimeout(function () {
-          fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-            method: "PATCH",
-            body: JSON.stringify({ wpId: targetWpId, toParentId: toId })
-          }).then(function () {
-            dd = document.getElementById("abyz-parent-selector"); if (dd) dd.remove();
-            return refreshTaxonomyViews("taxonomyNode");
-          }).catch(function (err) { window.alert(err.message); });
-        }, 0);
-      });
-      dropdown.appendChild(item);
-    });
-
-    if (allWps.length === 0) {
-      var empty = document.createElement("div");
-      empty.className = "abyz-parent-selector-empty";
-      empty.textContent = "같은 프로젝트에 다른 WP가 없습니다";
-      dropdown.appendChild(empty);
-    }
-
-    // WP 행 아래에 배치 — position:fixed로 viewport 기준 (scroll/stacking context 무관)
-    var rect = wpRow.getBoundingClientRect();
-    dropdown.style.top = (rect.bottom + 2) + "px";
-    dropdown.style.left = (rect.left + 20) + "px";
-    document.body.appendChild(dropdown);
-
-    // 외부 클릭 시 닫기 — 드롭다운 내부 클릭은 전파 차단하여 닫히지 않게
-    dropdown.addEventListener("click", function (ev) { ev.stopPropagation(); });
-    setTimeout(function () {
-      document.addEventListener("click", function close() {
-        if (document.getElementById("abyz-parent-selector")) { dropdown.remove(); }
-        document.removeEventListener("click", close);
-      });
-    }, 200);
   }
 
   function injectProjectDragHandle(projectRow, titleCode) {
@@ -1044,65 +919,6 @@
           window.alert(err.message);
         });
       }
-    });
-  }
-
-  // @MX:NOTE: WP→WP 부모(parent) drop — overlay div 패턴 (#15).
-  // WP 행은 OP CDK가 관리하여 HTML5 drop 이벤트가 소비됨. 섹션 행(플러그인 생성)은 동작하지만
-  // WP 행은 안 됨. 해결: WP 행 위에 플러그인 관리 overlay div를 주입. CDK는 overlay를 모르므로
-  // drop이 확실히 발생. 기존 mousedown stopPropagation(line 794)과 동일한 "CDK보다 먼저 잡기" 원리.
-  function addWpParentDropHandlers(wpRow, wpId) {
-    if (wpRow.dataset.abyzParentDropBound === "true") {
-      return;
-    }
-    wpRow.dataset.abyzParentDropBound = "true";
-
-    // dragstart 시 overlay 주입, dragend 시 제거 (상시 주입하면 OP 클릭/정렬 방해)
-    wpRow.addEventListener("dragenter", function (e) {
-      if (!state.drag || state.drag.type !== "wp" || state.drag.id === wpId) { return; }
-      if (wpRow.querySelector(".abyz-parent-overlay")) { return; }
-      var overlay = document.createElement("div");
-      overlay.className = "abyz-parent-overlay";
-      overlay.setAttribute("data-abyz-parent-wp-id", wpId);
-      // overlay는 WP 행 전체를 덮는 투명 드롭존
-      overlay.addEventListener("dragover", function (ev) {
-        if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
-          ev.preventDefault();
-          wpRow.classList.add("abyz-parent-drag-over");
-        }
-      });
-      overlay.addEventListener("dragleave", function (ev) {
-        wpRow.classList.remove("abyz-parent-drag-over");
-      });
-      overlay.addEventListener("drop", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        wpRow.classList.remove("abyz-parent-drag-over");
-        if (state.drag && state.drag.type === "wp" && state.drag.id !== wpId) {
-          var childId = state.drag.id;
-          state.drag = null;
-          fetchJson("/abyz_taxonomy/ui/assignments/move_wp_parent", {
-            method: "PATCH",
-            body: JSON.stringify({ wpId: childId, toParentId: wpId })
-          }).then(function () {
-            return refreshTaxonomyViews("taxonomyNode");
-          }).catch(function (err) {
-            window.alert(err.message);
-          });
-        }
-      });
-      wpRow.appendChild(overlay);
-    });
-
-    // 드래그 종료 시 overlay 제거
-    wpRow.addEventListener("dragend", function () {
-      var ov = wpRow.querySelector(".abyz-parent-overlay");
-      if (ov) { ov.remove(); }
-      wpRow.classList.remove("abyz-parent-drag-over");
-    });
-    wpRow.addEventListener("dragleave", function () {
-      var ov = wpRow.querySelector(".abyz-parent-overlay");
-      if (ov && !wpRow.contains(event.relatedTarget)) { ov.remove(); wpRow.classList.remove("abyz-parent-drag-over"); }
     });
   }
 
@@ -1443,9 +1259,7 @@
         }).filter(Boolean);
 
         workPackageRows.forEach(function (wpRow) {
-          var wpRowId = getWpIdFromRow(wpRow);
           injectWpDragHandle(wpRow, entry.section.code);
-          if (wpRowId) { addWpParentDropHandlers(wpRow, wpRowId); }
           assignedRows.push(wpRow);
           orderedRows.push(wpRow);
         });
@@ -1461,8 +1275,6 @@
         // Unassigned WPs (created via OP's native UI) also get a drag handle
         // so they can be moved into any section. sectionCode=null means "no section".
         injectWpDragHandle(row, null);
-        var unassignedWpId = getWpIdFromRow(row);
-        if (unassignedWpId) { addWpParentDropHandlers(row, unassignedWpId); }
         orderedRows.push(row);
       }
     });

@@ -131,21 +131,6 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
-    # @MX:NOTE: WP 부모(parent_id) 드래그 변경 (#15) — toParentId 빈 값이면 부모 해제(최상위)
-    def move_wp_parent
-      wp_id = taxonomy_params["wpId"].to_i
-      to_parent_id = taxonomy_params["toParentId"].presence
-
-      raise TaxonomyError, "wpId is required" if wp_id.zero?
-
-      TaxonomyService.set_work_package_parent!(work_package_id: wp_id, to_parent_id:)
-      render json: { _type: "AbyzTaxonomyParentSet", ok: true }
-    rescue TaxonomyError => e
-      render_taxonomy_error(e)
-    rescue ActiveRecord::RecordInvalid => e
-      render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
-    end
-
     def move_project
       project_identifier = taxonomy_params["projectIdentifier"].to_s.strip
       to_title_code = taxonomy_params["toTitleCode"].to_s.strip
