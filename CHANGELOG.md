@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.60] — 2026-06-30
+
+### Added — WP 부모/자식 관계 Rails 관리 페이지 (#15, 재설계)
+
+- **별도 Rails 페이지**(`/abyz_taxonomy/ui/wp_parents?project=XXX`)로 WP parent 관리. WP 행(OP 네이티브) DOM 주입 없음 → CDK/Zone.js 간섭 원천 차단.
+- WP 테이블 위에 "WP 부모/자식 관계 관리" 링크 버튼 추가(`<a href>`, 페이지 레벨).
+- Rails view(ERB) + `<form method=PATCH>` — edit_node와 동일한 패턴, OP Angular 완전 분리.
+- 같은 프로젝트 WP 전체의 parent를 한 페이지에서 일괄 변경(self/순환/타프로젝트 방지).
+- `WorkPackages::UpdateService` 경유 → 권한/콜백/히스토리 자동 기록.
+- 이전 0.2.49~0.2.58(JS 주입 방식) 실패 원인(CDK+Zone.js) 회피.
+
 ## [0.2.59] — 2026-06-30
 
 ### Reverted — WP parent 드래그/클릭 기능(#15) 전체 원복

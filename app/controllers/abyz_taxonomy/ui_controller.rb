@@ -173,6 +173,54 @@ module AbyzTaxonomy
       render_taxonomy_error(TaxonomyError.new(e.record.errors.full_messages.join(", ")))
     end
 
+    # @MX:NOTE: WP 부모/자식 관계 관리 페이지 (Rails view — OP Angular와 분리, edit_node 패턴)
+    def wp_parents
+      @project_identifier = params[:project]
+      project = Project.find_by(identifier: @project_identifier)
+      raise TaxonomyError, "project not found" unless project
+
+      @work_packages = WorkPackage.where(project_id: project.id).order(:id)
+      @wp_options = @work_packages.map { |wp| [wp.id, "##{wp.id} #{wp.subject}"] }
+    rescue TaxonomyError => e
+      render plain: e.message, status: e.status
+    end
+
+    # @MX:NOTE: WP 부모 관계 일괄 업데이트 — self/순환 방지 검증 후 UpdateService 호출
+    def update_wp_parents
+      project = Project.find_by(identifier: params[:project])
+      raise TaxonomyError, "project not found" unless project
+
+      changes = params[:parents]&.to_unsafe_h || {}
+      changed = 0
+      changes.each do |wp_id_str, parent_id_str|
+        wp_id = wp_id_str.to_i
+        parent_id = parent_id_str.present? ? parent_id_str.to_i : nil
+        wp = WorkPackage.find_by(id: wp_id)
+        next unless wp && wp.project_id == project.id
+
+        # self/순환 방지
+        if parent_id
+          raise TaxonomyError, "Cannot set self as parent" if parent_id == wp.id
+          parent = WorkPackage.find_by(id: parent_id)
+          raise TaxonomyError, "Parent not found" unless parent
+          raise TaxonomyError, "Parent must be in the same project" unless parent.project_id == project.id
+          ancestor = parent
+          while ancestor
+            raise TaxonomyError, "Cycle detected" if ancestor.id == wp.id
+            ancestor = ancestor.parent
+          end
+        end
+
+        call = ::WorkPackages::UpdateService.new(user: User.current, model: wp).call(parent: parent_id ? WorkPackage.find(parent_id) : nil)
+        raise TaxonomyError, call.errors.full_messages.join(", ") unless call.success?
+        changed += 1
+      end
+
+      redirect_to "/abyz_taxonomy/ui/wp_parents?project=#{params[:project]}", notice: "#{changed}개 WP의 부모 관계가 업데이트되었습니다."
+    rescue TaxonomyError => e
+      redirect_to "/abyz_taxonomy/ui/wp_parents?project=#{params[:project]}", alert: e.message
+    end
+
     private
 
     def taxonomy_params

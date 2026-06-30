@@ -1,0 +1,57 @@
+<div style="max-width: 900px; margin: 20px auto; padding: 20px; font-family: sans-serif;">
+  <h2>WP 부모/자식 관계 관리</h2>
+  <p>프로젝트: <strong><%= @project_identifier %></strong></p>
+
+  <% if flash[:notice] %>
+    <div style="background: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border-radius: 4px;"><%= flash[:notice] %></div>
+  <% end %>
+  <% if flash[:alert] %>
+    <div style="background: #f8d7da; color: #721c24; padding: 10px; margin: 10px 0; border-radius: 4px;"><%= flash[:alert] %></div>
+  <% end %>
+
+  <%= form_with url: "/abyz_taxonomy/ui/wp_parents", method: :patch, local: true do |f| %>
+    <%= hidden_field_tag :project, @project_identifier %>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+      <thead>
+        <tr style="background: #f1f3f5;">
+          <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">ID</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">제목</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">현재 부모</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">부모 WP 선택</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @work_packages.each do |wp| %>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #dee2e6;"><%= wp.id %></td>
+            <td style="padding: 8px; border: 1px solid #dee2e6;"><%= wp.subject %></td>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">
+              <% if wp.parent_id %>
+                <% parent = @work_packages.find { |w| w.id == wp.parent_id } %>
+                #<%= wp.parent_id %> <%= parent&.subject %>
+              <% else %>
+                <span style="color: #868e96;">(없음)</span>
+              <% end %>
+            </td>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">
+              <%= select_tag "parents[#{wp.id}]",
+                    options_from_collection_for_select(
+                      @work_packages.where.not(id: wp.id), :id, ->(w) { "##{w.id} #{w.subject}" },
+                      wp.parent_id
+                    ),
+                    include_blank: "(부모 없음 — 최상위)",
+                    style: "width: 100%; padding: 4px;" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 15px;">
+      <%= submit_tag "저장", style: "padding: 8px 20px; background: #4a90d9; color: white; border: none; border-radius: 4px; cursor: pointer;" %>
+      <%= link_to "WP 테이블로 돌아가기", "/projects/#{@project_identifier}/work_packages",
+            style: "margin-left: 10px; color: #4a90d9;" %>
+    </div>
+  <% end %>
+</div>
