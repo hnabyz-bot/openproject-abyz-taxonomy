@@ -175,16 +175,13 @@ module AbyzTaxonomy
 
     # @MX:NOTE: WP 부모/자식 관계 관리 페이지 (Rails view — OP Angular와 분리, edit_node 패턴)
     def wp_parents
-      respond_to do |format|
-        format.html do
-          @project_identifier = params[:project]
-          project = Project.find_by(identifier: @project_identifier)
-          raise TaxonomyError, "project not found" unless project
+      @project_identifier = params[:project]
+      project = Project.find_by(identifier: @project_identifier)
+      raise TaxonomyError, "project not found" unless project
 
-          @work_packages = WorkPackage.where(project_id: project.id).order(:id)
-          @wp_options = @work_packages.map { |wp| [wp.id, "##{wp.id} #{wp.subject}"] }
-        end
-      end
+      @work_packages = WorkPackage.where(project_id: project.id).order(:id)
+      @wp_options = @work_packages.map { |wp| [wp.id, "##{wp.id} #{wp.subject}"] }
+      render template: "abyz_taxonomy/wp_parents", layout: false
     rescue TaxonomyError => e
       render plain: e.message, status: e.status
     end
