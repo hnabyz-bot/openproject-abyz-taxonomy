@@ -133,6 +133,8 @@ node scripts/e2e/op_taxonomy_ui_e2e.js
 
 > **[HARD] WP permalink 형식 차이 (숫자 id vs slug) — dev와 운영이 다름**: dev OP는 WP permalink가 숫자 id(`/work_packages/330`)이고, 운영 OP는 slug(`/projects/.../work_packages/PROJ6-1/activity`)이다. JS에서 `a[href]` 정규식 `/\/work_packages\/(\d+)/`로 WP id를 추출하는 코드는 dev에서만 동작하고 운영에서는 매칭 실패한다. WP id가 필요한 모든 JS 경로(`getWpIdFromRow`, `workPackageRowMap`, `workPackageRenderSignature`, `postRowSigs`)는 **`tr[data-work-package-id]` 속성에서 id를 우선 읽어야 한다**. 교훈(0.2.47 #13 move_wp, 0.2.48 #14 렌더링): dev=운영 동일 코드인데 **운영만 안 되면 WP permalink 형식(slug)을 1순위로 의심**하라.
 
+> **[HARD] OP 네이티브 WP 행에 플러그인 UI/이벤트 주입 불가 (#15 실패)**: OP 네이티브 WP 행(`tr[data-work-package-id]`)은 Angular CDK가 pointer drag tracking을 등록하고 Zone.js가 모든 DOM 이벤트(click, dragover, drop, mousedown)를 추적한다. 플러그인이 WP 행에 버튼/handle/overlay를 주입하거나 이벤트 핸들러를 붙여도, Zone.js change detection이 트리거되어 WP 테이블을 재렌더 → 주입 요소가 소실/중복된다. 17번 시도(0.2.49~0.2.65) 전부 실패. **섹션 행(플러그인이 createElement로 생성)만 CDK/Zone.js 간섭 없이 동작**. WP parent 변경은 OP 네이티브 기능(WP 상세 페이지 parent 설정) 또는 별도 독립 Rails 페이지(OP SPA 라우팅 밖)로만 가능하다.
+
 ## MoAI Workflow
 
 ```bash

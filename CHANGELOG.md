@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.66] — 2026-07-01
+
+### Reverted — WP 부모/자식(#15) 최종 원복, 기능 실패 확정
+
+- 0.2.49~0.2.65(17번 시도) 끝에 #15 WP parent 설정 기능 실패 확정. 코드를 0.2.48(안정)로 전면 복원.
+- **실패 원인 요약**:
+  1. 드래그 방식(0.2.49~0.2.52): OP CDK가 WP 행(네이티브)의 HTML5 DnD drop 이벤트 소비 → drop 불가
+  2. 버튼 클릭 방식(0.2.53~0.2.58): OP Zone.js가 WP 행 click 이벤트 추적 → change detection → DOM 재렌더 → fetchJson 미호출
+  3. Rails 페이지 방식(0.2.60~0.2.65): OP Angular SPA가 링크 가로채 → 406 format / 들여쓰기 미표시
+- **근본 제약**: OP 네이티브 WP 행은 Angular CDK+Zone.js가 모든 DOM 이벤트를 추적/소비. 플러그인이 WP 행에 UI를 주입하거나 이벤트를 받을 수 없음. 섹션 행(플러그인 생성)만 동작.
+- 백엔드(move_wp_parent API, set_work_package_parent!)는 정상 동작 확인(Playwright PATCH 200 + DB 영속). 프론트엔드 접근이 불가한 것.
+
 ## [0.2.60] — 2026-06-30
 
 ### Added — WP 부모/자식 관계 Rails 관리 페이지 (#15, 재설계)

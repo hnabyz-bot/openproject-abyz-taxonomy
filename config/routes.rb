@@ -15,7 +15,5 @@ Rails.application.routes.draw do
     patch "ui/nodes/:code/settings/general", to: "ui#update_node_settings", constraints: { code: /[^\/]+/ }
     patch "ui/nodes/:code", to: "ui#update_node", constraints: { code: /[^\/]+/ }, defaults: { format: :json }
     delete "ui/nodes/:code", to: "ui#delete_node", constraints: { code: /[^\/]+/ }, defaults: { format: :json }
-    get "ui/wp_parents", to: "ui#wp_parents"
-    patch "ui/wp_parents", to: "ui#update_wp_parents"
   end
 end
